@@ -1,0 +1,21 @@
+@import './tokens.css';
+
+:root {
+  font-family: var(--sys-font-headings-h1-heavy-fontfamily, Inter, system-ui, sans-serif);
+  background-color: var(--sys-colors-surfaces-surface-primary, #ffffff);
+  color: var(--sys-colors-text-text-primary, #1a1a1a);
+  font-size: var(--sys-font-body-body-regular-fontsize, 15px);
+  line-height: var(--sys-font-body-body-regular-lineheight, 1.5);
+  font-weight: 400;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+}
