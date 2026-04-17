@@ -37,7 +37,7 @@ export const robotsData: Robot[] = [
     name: "Delta Robot",
     description: "Parallel robot structure perfect for extremely rapid, lightweight overhead sorting.",
     capabilities: ["Sorting", "Food Processing", "Light Assembly"],
-    specs: "4 DOF • Up to 3kg • Very high speed"
+    specs: "4 DOF • Up to 3kg • Very high speed",
     model: "/models/delta.glb"
   }
 ];
