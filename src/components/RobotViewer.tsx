@@ -1,4 +1,4 @@
-import { useMemo, useRef, Suspense, Component, ReactNode } from 'react';
+import { useMemo, useRef, Suspense, Component, type ReactNode } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF, OrbitControls, Center, ContactShadows, Environment } from '@react-three/drei';
 import * as THREE from 'three';
@@ -8,18 +8,22 @@ interface RobotViewerProps {
 }
 
 class ErrorBoundary extends Component<{ children: ReactNode, fallback: ReactNode }, { hasError: boolean }> {
-  state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
+  state = { hasError: false, error: null as Error | null };
+  static getDerivedStateFromError(error: Error) { return { hasError: true, error }; }
   componentDidUpdate(prevProps: { children: ReactNode, fallback: ReactNode }) {
     if (this.props.children !== prevProps.children) {
       this.setState({ hasError: false });
     }
+  }
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("ErrorBoundary caught an error:", error, info);
   }
   render() { return this.state.hasError ? this.props.fallback : this.props.children; }
 }
 
 function GLTFModel({ url }: { url: string }) {
   const { scene } = useGLTF(url);
+  const clonedScene = useMemo(() => scene.clone(), [scene]);
   const meshRef = useRef<THREE.Group>(null!);
 
   useFrame((_, delta) => {
@@ -30,16 +34,16 @@ function GLTFModel({ url }: { url: string }) {
 
   const targetSize = 4.5;
   const scale = useMemo(() => {
-    const box = new THREE.Box3().setFromObject(scene);
+    const box = new THREE.Box3().setFromObject(clonedScene);
     const size = box.getSize(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z);
     return maxDim > 0 ? targetSize / maxDim : 1;
-  }, [scene]);
+  }, [clonedScene]);
 
   return (
     <group position={[0, -targetSize / 2, 0]}>
       <Center position={[0, targetSize / 2, 0]}>
-        <primitive object={scene} ref={meshRef} scale={scale} />
+        <primitive object={clonedScene} ref={meshRef} scale={scale} />
       </Center>
       <ContactShadows position={[0, 0, 0]} opacity={0.4} scale={10} blur={2} far={4} />
     </group>
