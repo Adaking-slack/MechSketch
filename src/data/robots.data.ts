@@ -1,43 +1,38 @@
 export interface Robot {
   id: string;
   name: string;
-  tag: string;
   description: string;
-  specs: string;
-  modelUrl: string;
+  capabilities: string[];
+  model: string;
 }
 
 export const robotsData: Robot[] = [
   {
     id: "6-axis",
     name: "6-Axis Robotic Arm",
-    tag: "Beginner Friendly",
     description: "Versatile 6-axis articulated robot for complex, multi-directional tasks.",
-    specs: "6 DOF • Up to 10kg • ~1.3m reach",
-    modelUrl: "/models/6-axis.glb"
+    capabilities: ["Pick & Place", "Welding", "Assembly", "Painting"],
+    model: "/Models/Robot Arm.glb"
   },
   {
     id: "scara",
     name: "SCARA Robot",
-    tag: "High-Speed Assembly",
     description: "Selective Compliance Assembly Robot Arm specialized for fast horizontal plane operations.",
-    specs: "4 DOF • Up to 5kg • High precision",
-    modelUrl: "/models/scara.glb"
+    capabilities: ["High-Speed Assembly", "Packaging", "Material Handling"],
+    model: "/Models/scara.glb"
   },
   {
     id: "cartesian",
     name: "Cartesian Robot",
-    tag: "Simple & Precise",
     description: "Gantry-style robot moving in linear paths along X, Y, and Z axes.",
-    specs: "3 DOF • Up to 15kg • X/Y/Z movement",
-    modelUrl: "/models/cartesian.glb"
+    capabilities: ["CNC Machining", "3D Printing", "Palletizing"],
+    model: "/Models/Plasma.glb"
   },
   {
     id: "delta",
     name: "Delta Robot",
-    tag: "Ultra-Fast Pick & Place",
-    description: "Parallel robot structure perfect for extremely rapid, lightweight overhead sorting.',",
-    specs: "4 DOF • Up to 3kg • Very high speed",
-    modelUrl: "/models/delta.glb"
+    description: "Parallel robot structure perfect for extremely rapid, lightweight overhead sorting.",
+    capabilities: ["Sorting", "Food Processing", "Light Assembly"],
+    model: "/Models/delta.glb"
   }
 ];

@@ -6,120 +6,76 @@ This file defines **non-negotiable constraints** for generating the Robot Select
 
 Applies to:
 - UI generation
-- Component structure
-- Animation logic
-- Rendering logic
+Robot Selection UI – Design Spec & Prompt
+Overview
+Build a robot selection page with a two-panel card layout. The page allows users to browse different robot types and select one. Reference the layout and style described below.
 
-If any rule conflicts with general best practices:
-> **THIS FILE TAKES PRIORITY**
+Layout
+The page uses a light gray background (#f0f2f5) with a centered two-panel card:
+[ Left Panel: Robot Image ]  [ Right Panel: Robot Details ]
 
----
+Both panels are white cards with rounded corners (border-radius: 16px) and a subtle box shadow
+The two cards sit side by side with a small gap (~16px)
+Overall card max-width: ~900px, centered on the page
 
-## 2. Hard UI Constraint (CRITICAL)
 
-### ❌ NEVER ALLOWED
+Left Panel – Robot Image Card
 
-- Grid layout
-- List layout
-- Flat horizontal slider
-- Showing all cards equally
+White background, rounded corners
+Contains a large robot image centered and filling most of the panel
+Image should have a light/white background for clean presentation
+No text in this panel
 
-### ✅ REQUIRED
 
-A **center-focused layered carousel**
+Right Panel – Robot Details Card
+Header Section
 
-Meaning:
-- Exactly ONE card is visually dominant at any time
-- Other cards exist only as background context
+Robot Name — large bold heading (e.g. font-size: 28px, font-weight: 700, dark navy color #0d1b2a)
+Subtitle/Description — one-line description in gray text below the name (e.g. color: #555, font-size: 15px)
 
----
+Capabilities Section
 
-## 3. Card Visibility Rules (STRICT)
+Section heading: "Capabilities" in bold (font-weight: 700, font-size: 16px)
+Bulleted list of 3–5 capabilities
+Each bullet uses a teal/green filled circle (●) as the list marker (color: #0d9488)
+Capability text in dark gray, font-size: 15px
 
-### Active Card
+Example capabilities:
 
-MUST:
-- Be centered
-- Be largest (scale ≈ 1)
-- Have highest z-index
-- Have full opacity
-- Show FULL content:
-  - 3D Canvas (R3F)
-  - Name
-  - Tag
-  - Description
-  - Specs
-  - CTA button
+High-Speed Assembly
+3D Printing
+Palletizing
 
----
+Select Button
 
-### Background Cards
+Full-width button at the bottom of the right panel
+Background: deep navy blue (#0f2d5e or similar)
+Text: white, font-size: 16px, centered
+Border radius: fully rounded pill shape (border-radius: 50px)
+Hover state: slightly lighter navy
 
-MUST:
-- Be smaller (≤ 0.85 scale)
-- Be visually de-emphasized (opacity < 1)
-- Sit behind active card
 
-MUST ONLY SHOW:
-- Robot Name
+Robot Data (Cards to Show)
+Each robot card should include:
+Robot TypeDescriptionCapabilitiesCartesian RobotGantry-style robot moving in linear paths along X, Y, and Z axes.High-Speed Assembly, 3D Printing, PalletizingSCARA RobotSelective compliance robot ideal for fast pick-and-place operations.Pick & Place, PCB Assembly, DispensingDelta RobotSpider-shaped parallel robot for extremely fast, light-duty tasks.Packaging, Sorting, Food HandlingArticulated RobotMulti-joint arm mimicking human shoulder, elbow, and wrist motion.Welding, Painting, Heavy LiftingCollaborative RobotHuman-safe cobot designed to work alongside people on the floor.Assembly Assist, Inspection, Screwdriving
 
----
+Color Palette
+ElementColorPage background#f0f2f5Card background#ffffffHeading text#0d1b2aBody/subtitle text#555555Bullet marker#0d9488 (teal)Select button bg#0f2d5e (deep navy)Select button text#ffffff
 
-### ❌ VIOLATION CONDITIONS
+Typography
 
-If ANY background card includes:
-- button
-- specs
-- description
-- 3D canvas
+Font family: 'helvetica nue' 
+Robot name heading: 28px, 700 weight
+Section subheadings (e.g. "Capabilities"): 16px, 700 weight
+Body / description text: 15px, 400 weight
+Button label: 16px, 500 weight
 
-→ OUTPUT IS INVALID
 
----
+Interaction / Navigation
 
-## 4. Rendering Rules (R3F ENFORCEMENT)
+The page should allow navigating between robots (previous / next arrows, or a carousel/tab approach)
+The currently selected robot is displayed in the two-panel card
+Clicking "Select robot" confirms the choice and can trigger a callback or route change
 
-### REQUIRED
+the numbering (1/4) should be placed right under the card
 
-- Use **React Three Fiber** for all 3D rendering
-- Use `<Canvas>` ONLY inside active card
-
----
-
-### ❌ NEVER ALLOWED
-
-- Rendering 3D in multiple cards simultaneously
-- Using raw Three.js without R3F abstraction (unless justified internally)
-- DOM-based fake 3D
-
----
-
-## 5. Animation Constraints
-
-### REQUIRED
-
-- Smooth transitions (`ease-in-out`)
-- Position interpolation (no jumps)
-- Depth illusion via:
-  - scale
-  - translateX
-  - z-index
-  - opacity
-
----
-
-### ❌ NEVER ALLOWED
-
-- Instant snapping between states
-- Hard switching of cards
-- Flickering or layout reflow jumps
-
----
-
-## 6. State Model (MANDATORY)
-
-Must include:
-
-```ts
-activeIndex: number
-selectedRobot: Robot

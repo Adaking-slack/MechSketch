@@ -31,10 +31,17 @@ export default function RobotCarousel() {
   };
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '600px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ 
+      position: 'relative', 
+      width: '100%', 
+      height: '100%', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center' 
+    }}>
       
       {/* Cards Container */}
-      <div style={{ position: 'relative', width: '800px', height: '100%' }}>
+      <div style={{ position: 'relative', width: '1000px', height: '600px' }}>
         {robotsData.map((robot, i) => {
           let position: 'left' | 'center' | 'right' | 'hidden' = 'hidden';
           const distance = (i - activeIndex + robotsData.length) % robotsData.length;
@@ -60,31 +67,34 @@ export default function RobotCarousel() {
       <button 
         onClick={handlePrev}
         style={{
-          position: 'absolute', left: '10%', top: '50%', transform: 'translateY(-50%)',
-          background: 'var(--sys-colors-surfaces-surface-hover, rgba(255,255,255,0.1))', border: 'none', borderRadius: '50%', padding: '12px', cursor: 'pointer', zIndex: 20
+          position: 'absolute', left: '5%', top: '50%', transform: 'translateY(-50%)',
+          background: 'white', border: '1px solid #e0e0e0', boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+          borderRadius: '50%', padding: '16px', cursor: 'pointer', zIndex: 30, color: '#333'
         }}
       >
-        <ChevronLeft color="var(--sys-colors-text-text-primary, #fff)" size={32} />
+        <ChevronLeft size={32} />
       </button>
 
       <button 
         onClick={handleNext}
         style={{
-          position: 'absolute', right: '10%', top: '50%', transform: 'translateY(-50%)',
-          background: 'var(--sys-colors-surfaces-surface-hover, rgba(255,255,255,0.1))', border: 'none', borderRadius: '50%', padding: '12px', cursor: 'pointer', zIndex: 20
+          position: 'absolute', right: '5%', top: '50%', transform: 'translateY(-50%)',
+          background: 'white', border: '1px solid #e0e0e0', boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+          borderRadius: '50%', padding: '16px', cursor: 'pointer', zIndex: 30, color: '#333'
         }}
       >
-        <ChevronRight color="var(--sys-colors-text-text-primary, #fff)" size={32} />
+        <ChevronRight size={32} />
       </button>
 
       {/* Indicator */}
       <div style={{
         position: 'absolute',
-        bottom: '20px',
-        color: 'var(--sys-colors-text-text-secondary, #888)',
-        fontSize: '14px',
+        bottom: '40px',
+        color: '#666',
+        fontSize: '16px',
         fontWeight: 'bold',
-        letterSpacing: '2px'
+        letterSpacing: '2px',
+        zIndex: 30
       }}>
         {activeIndex + 1} / {robotsData.length}
       </div>

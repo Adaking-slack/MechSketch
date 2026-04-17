@@ -1,10 +1,6 @@
-import { useRef, Suspense, Component } from 'react';
-import type { ReactNode } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
-import * as THREE from 'three';
 import { motion } from 'framer-motion';
 import type { Robot } from '../data/robots.data';
+import RobotViewer from './RobotViewer';
 
 interface RobotCardProps {
   robot: Robot;
@@ -14,50 +10,30 @@ interface RobotCardProps {
   onSelect: (robot: Robot) => void;
 }
 
-class ErrorBoundary extends Component<{children: ReactNode, fallback: ReactNode}, {hasError: boolean}> {
-  state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
-  render() { return this.state.hasError ? this.props.fallback : this.props.children; }
-}
-
-function GLTFModel({ url }: { url: string }) {
-  // useGLTF dynamically loads the external model.
-  const { scene } = useGLTF(url);
-  const meshRef = useRef<THREE.Group>(null!);
-
-  useFrame((_, delta) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.y += delta * 0.3; // gentle rotation
-    }
-  });
-
-  return <primitive object={scene} ref={meshRef} position={[0, -1, 0]} scale={1.5} />;
-}
-
 const variants = {
   center: {
     scale: 1,
     opacity: 1,
     x: '0%',
-    zIndex: 10,
+    zIndex: 20,
     filter: 'blur(0px)',
   },
   left: {
-    scale: 0.8,
-    opacity: 0.6,
+    scale: 0.85,
+    opacity: 0.5,
     x: '-60%',
-    zIndex: 5,
+    zIndex: 10,
     filter: 'blur(2px)',
   },
   right: {
-    scale: 0.8,
-    opacity: 0.6,
+    scale: 0.85,
+    opacity: 0.5,
     x: '60%',
-    zIndex: 5,
+    zIndex: 10,
     filter: 'blur(2px)',
   },
   hidden: {
-    scale: 0.6,
+    scale: 0.7,
     opacity: 0,
     x: '0%',
     zIndex: 0,
@@ -71,117 +47,152 @@ export default function RobotCard({ robot, isActive, position, onClick, onSelect
       variants={variants}
       initial={false}
       animate={position}
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      transition={{ type: 'spring', stiffness: 250, damping: 25 }}
       onClick={!isActive ? onClick : undefined}
       style={{
         position: 'absolute',
-        width: '400px',
-        height: '500px',
-        backgroundColor: 'var(--sys-colors-surfaces-surface-base, #1e1e1e)',
-        borderRadius: 'var(--sys-borderradius-radii-md, 16px)',
-        boxShadow: isActive ? 'var(--sys-shadows-shadow-3, 0 10px 30px rgba(0,0,0,0.5))' : 'var(--sys-shadows-shadow-1, 0 4px 10px rgba(0,0,0,0.2))',
-        border: '1px solid var(--sys-colors-borders-border-base, #333)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: 'var(--sys-spacing-spacing-4, 24px)',
-        cursor: isActive ? 'auto' : 'pointer',
-        overflow: 'hidden',
-        color: 'var(--sys-colors-text-text-primary, #fff)',
         top: '50%',
         left: '50%',
-        marginTop: '-250px',
-        marginLeft: '-200px'
+        // Center the card around its origin
+        marginTop: '-280px',
+        marginLeft: isActive ? '-450px' : '-150px', // width changes based on active state
+        width: isActive ? '900px' : '300px',
+        height: '560px',
+        backgroundColor: '#ffffff', // Clean white background
+        borderRadius: '24px',
+        boxShadow: isActive ? '0 20px 40px rgba(0,0,0,0.1)' : '0 10px 20px rgba(0,0,0,0.05)',
+        display: 'flex',
+        flexDirection: 'row',
+        cursor: isActive ? 'auto' : 'pointer',
+        overflow: 'hidden',
+        color: '#111827', // Dark slate text
+        border: '1px solid #f0f0f0'
       }}
     >
-      <div style={{ flex: 1, width: '100%', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        {isActive ? (
-          <Canvas camera={{ position: [0, 0, 5] }} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
-            <ambientLight intensity={0.5} />
-            <pointLight position={[10, 10, 10]} />
-            <Suspense fallback={
-              <mesh>
-                <boxGeometry args={[1, 1, 1]} />
-                <meshStandardMaterial color="gray" wireframe={true} />
-              </mesh>
-            }>
-              <ErrorBoundary fallback={
-                <mesh>
-                  <boxGeometry args={[1.5, 1.5, 1.5]} />
-                  <meshStandardMaterial color="red" wireframe={true} />
-                </mesh>
-              }>
-                <GLTFModel url={robot.modelUrl} />
-              </ErrorBoundary>
-            </Suspense>
-          </Canvas>
-        ) : (
+      {isActive ? (
+        <>
+          {/* Left Pane: 3D Viewer */}
           <div style={{
-            width: '100px', height: '100px', border: '2px dashed var(--sys-colors-borders-border-base, #555)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sys-colors-text-text-tertiary, #888)'
+            flex: 1,
+            backgroundColor: '#f8f9fa',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative'
           }}>
-            Preview
+            <RobotViewer modelUrl={robot.model} />
           </div>
-        )}
-      </div>
 
-      <div style={{ marginTop: '20px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', zIndex: 2 }}>
-        <h2 style={{
-          fontSize: 'var(--sys-font-headings-h3-bold-fontsize, 24px)',
-          fontWeight: 'var(--sys-font-headings-h3-bold-fontweight, bold)',
-          margin: '0 0 8px 0'
-        }}>
-          {robot.name}
-        </h2>
-        
-        {isActive && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <span style={{
-              display: 'inline-block',
-              backgroundColor: 'var(--sys-colors-surfaces-surface-hover, #2a2a2a)',
-              color: 'var(--sys-colors-text-text-secondary, #aaa)',
-              padding: '4px 12px',
-              borderRadius: '20px',
-              fontSize: '12px',
-              marginBottom: '12px'
+          {/* Right Pane: Details */}
+          <div style={{
+            flex: 1,
+            padding: '48px',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: '#ffffff'
+          }}>
+            <h2 style={{
+              fontSize: '32px',
+              fontWeight: '800',
+              color: '#0f172a', // Dark blue/slate
+              margin: '0 0 16px 0',
+              letterSpacing: '-0.5px'
             }}>
-              {robot.tag}
-            </span>
+              {robot.name}
+            </h2>
+
             <p style={{
-              fontSize: '14px',
-              color: 'var(--sys-colors-text-text-secondary, #bbb)',
-              margin: '0 0 12px 0'
+              fontSize: '16px',
+              color: '#475569',
+              lineHeight: '1.6',
+              margin: '0 0 40px 0'
             }}>
               {robot.description}
             </p>
-            <p style={{
-              fontSize: '13px',
-              fontWeight: 'var(--sys-font-body-body-bold-fontweight, bold)',
-              color: 'var(--sys-colors-text-text-primary, #fff)',
-              margin: '0 0 20px 0'
+
+            <h3 style={{
+              fontSize: '18px',
+              fontWeight: '700',
+              color: '#0f172a',
+              margin: '0 0 16px 0'
             }}>
-              {robot.specs}
-            </p>
+              Capabilities
+            </h3>
+
+            <ul style={{
+              listStyleType: 'none',
+              padding: 0,
+              margin: '0 0 auto 0',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}>
+              {robot.capabilities.map((cap, idx) => (
+                <li key={idx} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '15px',
+                  color: '#334155'
+                }}>
+                  <span style={{
+                    width: '8px',
+                    height: '8px',
+                    backgroundColor: '#0d9488', // Teal dot matching the image
+                    borderRadius: '50%',
+                    marginRight: '12px',
+                    display: 'inline-block'
+                  }} />
+                  {cap}
+                </li>
+              ))}
+            </ul>
+
             <button
               onClick={() => onSelect(robot)}
               style={{
-                backgroundColor: 'var(--sys-color-roles-primary-roles-primary, #007bff)',
-                color: 'var(--sys-color-roles-primary-roles-on-primary, #fff)',
-                border: 'none',
-                padding: '12px 24px',
-                borderRadius: 'var(--sys-borderradius-radii-sm, 8px)',
-                cursor: 'pointer',
-                fontWeight: 'bold',
+                marginTop: '32px',
                 width: '100%',
-                transition: 'background-color 0.2s',
+                padding: '16px',
+                backgroundColor: '#003366', // Dark blue matching the image CTA
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '24px', // Highly rounded pill shape
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'transform 0.1s, background-color 0.2s',
+                boxShadow: '0 4px 12px rgba(0, 51, 102, 0.2)'
               }}
-              onMouseOver={e => e.currentTarget.style.backgroundColor = 'var(--sys-color-roles-primary-roles-primary-container, #0056b3)'}
-              onMouseOut={e => e.currentTarget.style.backgroundColor = 'var(--sys-color-roles-primary-roles-primary, #007bff)'}
+              onMouseOver={e => e.currentTarget.style.backgroundColor = '#002244'}
+              onMouseOut={e => e.currentTarget.style.backgroundColor = '#003366'}
+              onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
+              onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
             >
-              Select Robot
+              Select robot
             </button>
-          </motion.div>
-        )}
-      </div>
+          </div>
+        </>
+      ) : (
+        /* Inactive State: Just show the name */
+        <div style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#ffffff'
+        }}>
+          <h2 style={{
+            fontSize: '24px',
+            fontWeight: '700',
+            color: '#94a3b8',
+            margin: 0,
+            textAlign: 'center'
+          }}>
+            {robot.name}
+          </h2>
+        </div>
+      )}
     </motion.div>
   );
 }
