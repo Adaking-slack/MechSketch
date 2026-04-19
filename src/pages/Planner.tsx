@@ -12,12 +12,12 @@ export default function Planner() {
         <div>
           <h2>Active Robot: {selectedRobot.name}</h2>
           <p>Tag: {selectedRobot.tag}</p>
-          <button onClick={() => navigate('/')}>Back to Selection</button>
+          <button onClick={() => navigate('/select-robot')}>Back to Selection</button>
         </div>
       ) : (
         <div>
           <p>No robot selected!</p>
-          <button onClick={() => navigate('/')}>Select a Robot</button>
+          <button onClick={() => navigate('/select-robot')}>Select a Robot</button>
         </div>
       )}
     </div>
