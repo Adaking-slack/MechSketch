@@ -1,197 +1,176 @@
 import { motion } from 'framer-motion';
 import type { Robot } from '../data/robots.data';
 import RobotViewer from './RobotViewer';
+import { Bot } from 'lucide-react';
 
 interface RobotCardProps {
   robot: Robot;
   isActive: boolean;
-  position: 'left' | 'center' | 'right' | 'hidden';
-  onClick: () => void;
-  onSelect: (robot: Robot) => void;
+  offset: number; // e.g., -1 for left, 0 for center, 1 for right
+  onSelect: () => void;
 }
 
-const variants = {
-  center: {
-    scale: 1,
-    opacity: 1,
-    x: '0%',
-    zIndex: 20,
-    filter: 'blur(0px)',
-  },
-  left: {
-    scale: 0.85,
-    opacity: 0.5,
-    x: '-60%',
-    zIndex: 10,
-    filter: 'blur(2px)',
-  },
-  right: {
-    scale: 0.85,
-    opacity: 0.5,
-    x: '60%',
-    zIndex: 10,
-    filter: 'blur(2px)',
-  },
-  hidden: {
-    scale: 0.7,
-    opacity: 0,
-    x: '0%',
-    zIndex: 0,
-    filter: 'blur(5px)',
-  }
-};
-
-export default function RobotCard({ robot, isActive, position, onClick, onSelect }: RobotCardProps) {
+export default function RobotCard({ robot, isActive, offset, onSelect }: RobotCardProps) {
+  // offset mapping:
+  // -1 -> left
+  //  0 -> center
+  //  1 -> right
+  // We compute x translation and z-index based on offset.
+  
+  const width = isActive ? 400 : 320;
+  const height = isActive ? 550 : 450;
+  
+  const isVisible = Math.abs(offset) <= 1;
+  const x = offset * 280; // Distance between cards
+  const scale = isActive ? 1 : 0.8;
+  const zIndex = isActive ? 10 : isVisible ? 5 : 0;
+  const opacity = isActive ? 1 : isVisible ? 0.6 : 0;
+  const blur = isActive ? "blur(0px)" : "blur(6px)";
+  
+  const yOffset = isActive ? -4 : 4;
+  const shadow = isActive 
+    ? '0 20px 40px rgba(0,0,0,0.08)' 
+    : '0 8px 16px rgba(0,0,0,0.04)';
   return (
     <motion.div
-      variants={variants}
       initial={false}
-      animate={position}
-      transition={{ type: 'spring', stiffness: 250, damping: 25 }}
-      onClick={!isActive ? onClick : undefined}
+      animate={{
+        x: `calc(-50% + ${x}px)`,
+        y: `calc(-50% + ${yOffset}px)`,
+        scale,
+        opacity,
+        zIndex,
+        filter: blur,
+        boxShadow: shadow
+      }}
+      transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+      whileHover={isActive ? { scale: 1.01, y: `calc(-50% - 6px)`, boxShadow: '0 28px 48px rgba(0,0,0,0.12)' } : {}}
       style={{
         position: 'absolute',
         top: '50%',
         left: '50%',
-        // Center the card around its origin
-        marginTop: '-280px',
-        marginLeft: isActive ? '-450px' : '-150px', // width changes based on active state
-        width: isActive ? '900px' : '300px',
-        height: '560px',
-        backgroundColor: '#ffffff', // Clean white background
+        pointerEvents: isVisible ? 'auto' : 'none',
+        width,
+        height,
+        backgroundColor: 'var(--sys-colors-surfaces-surface-primary, #ffffff)',
         borderRadius: '24px',
-        boxShadow: isActive ? '0 20px 40px rgba(0,0,0,0.1)' : '0 10px 20px rgba(0,0,0,0.05)',
         display: 'flex',
-        flexDirection: 'row',
-        cursor: isActive ? 'auto' : 'pointer',
+        flexDirection: 'column',
+        alignItems: 'center',
         overflow: 'hidden',
-        color: '#111827', // Dark slate text
-        border: '1px solid #f0f0f0'
+        border: '1px solid var(--sys-colors-borders-border-primary, #e0e0e0)',
+        transformOrigin: 'center center',
+        padding: '32px',
+        boxSizing: 'border-box'
       }}
     >
-      {isActive ? (
-        <>
-          {/* Left Pane: 3D Viewer */}
-          <div style={{
-            flex: 1,
-            backgroundColor: '#f8f9fa',
-            display: 'flex',
+      {/* 1. Robot 3D canvas (centered) */}
+      <div style={{ 
+        width: '100%', 
+        height: isActive ? '240px' : '200px', 
+        position: 'relative', 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '24px'
+      }}>
+        {isActive ? (
+          <RobotViewer modelUrl={robot.model} />
+        ) : (
+          <Bot size={64} color="#ccc" strokeWidth={1} />
+        )}
+      </div>
+
+      {/* 2. Robot Name */}
+      <h3 style={{ 
+        margin: '0 0 12px 0', 
+        fontSize: '24px', 
+        fontWeight: 700,
+        textAlign: 'center',
+        color: 'var(--sys-colors-text-text-primary, #1a1a1a)'
+      }}>
+        {robot.name}
+      </h3>
+
+      {/* 3. Tag */}
+      {isActive && (
+        <span style={{ 
+          fontSize: '12px', 
+          fontWeight: 600,
+          padding: '4px 12px', 
+          backgroundColor: '#f0f4ff', 
+          color: '#0055ff', 
+          borderRadius: '999px',
+          display: 'inline-block',
+          marginBottom: '20px'
+        }}>
+          {robot.tag}
+        </span>
+      )}
+
+      {/* 4/5/6 Content */}
+      {isActive && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
             alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative'
+            textAlign: 'center',
+            width: '100%', 
+            flex: 1 
+          }}
+        >
+          <p style={{ 
+            margin: '0 0 16px 0', 
+            fontSize: '14px', 
+            lineHeight: '20px',
+            color: 'var(--sys-colors-text-text-secondary, #666)',
+            width: '100%'
           }}>
-            <RobotViewer modelUrl={robot.model} />
-          </div>
-
-          {/* Right Pane: Details */}
-          <div style={{
-            flex: 1,
-            padding: '48px',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#ffffff'
+            {robot.description}
+          </p>
+          <p style={{ 
+            margin: '0', 
+            fontSize: '13px', 
+            fontWeight: 500, 
+            color: 'var(--sys-colors-text-text-secondary, #888)' 
           }}>
-            <h2 style={{
-              fontSize: '32px',
-              fontWeight: '800',
-              color: '#0f172a', // Dark blue/slate
-              margin: '0 0 16px 0',
-              letterSpacing: '-0.5px'
-            }}>
-              {robot.name}
-            </h2>
-
-            <p style={{
-              fontSize: '16px',
-              color: '#475569',
-              lineHeight: '1.6',
-              margin: '0 0 40px 0'
-            }}>
-              {robot.description}
-            </p>
-
-            <h3 style={{
-              fontSize: '18px',
-              fontWeight: '700',
-              color: '#0f172a',
-              margin: '0 0 16px 0'
-            }}>
-              Capabilities
-            </h3>
-
-            <ul style={{
-              listStyleType: 'none',
-              padding: 0,
-              margin: '0 0 auto 0',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px'
-            }}>
-              {robot.capabilities.map((cap, idx) => (
-                <li key={idx} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  fontSize: '15px',
-                  color: '#334155'
-                }}>
-                  <span style={{
-                    width: '8px',
-                    height: '8px',
-                    backgroundColor: '#0d9488', // Teal dot matching the image
-                    borderRadius: '50%',
-                    marginRight: '12px',
-                    display: 'inline-block'
-                  }} />
-                  {cap}
-                </li>
-              ))}
-            </ul>
-
-            <button
-              onClick={() => onSelect(robot)}
+            {robot.specs}
+          </p>
+          <div style={{ width: '100%', marginTop: 'auto', paddingTop: '24px' }}>
+            <button 
+              onClick={onSelect}
               style={{
-                marginTop: '32px',
                 width: '100%',
-                padding: '16px',
-                backgroundColor: '#003366', // Dark blue matching the image CTA
-                color: '#ffffff',
+                padding: '14px',
+                backgroundColor: 'var(--sys-color-roles-primary-roles-primary, #00376e)',
+                color: 'var(--sys-color-roles-primary-roles-on-primary, #ffffff)',
                 border: 'none',
-                borderRadius: '24px', // Highly rounded pill shape
+                borderRadius: '12px',
                 fontSize: '16px',
-                fontWeight: '600',
+                fontWeight: 600,
                 cursor: 'pointer',
-                transition: 'transform 0.1s, background-color 0.2s',
-                boxShadow: '0 4px 12px rgba(0, 51, 102, 0.2)'
+                transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
               }}
-              onMouseOver={e => e.currentTarget.style.backgroundColor = '#002244'}
-              onMouseOut={e => e.currentTarget.style.backgroundColor = '#003366'}
-              onMouseDown={e => e.currentTarget.style.transform = 'scale(0.98)'}
-              onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--sys-primitives-colors-primary-primary-600, #012950)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.15)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--sys-color-roles-primary-roles-primary, #00376e)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+              }}
             >
-              Select robot
+              Select Robot
             </button>
           </div>
-        </>
-      ) : (
-        /* Inactive State: Just show the name */
-        <div style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#ffffff'
-        }}>
-          <h2 style={{
-            fontSize: '24px',
-            fontWeight: '700',
-            color: '#94a3b8',
-            margin: 0,
-            textAlign: 'center'
-          }}>
-            {robot.name}
-          </h2>
-        </div>
+        </motion.div>
       )}
     </motion.div>
   );

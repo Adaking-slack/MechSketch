@@ -1,21 +1,28 @@
-import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import RobotCard from './RobotCard';
-import { robotsData } from '../data/robots.data';
-import type { Robot } from '../data/robots.data';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { robotsData } from '../data/robots.data';
+import RobotCard from './RobotCard';
 
 export default function RobotCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const navigate = useNavigate();
 
-  const handleNext = () => {
-    setActiveIndex((prev) => (prev + 1) % robotsData.length);
-  };
+  // Create an extended array for buffering transitions
+  const extendedRobots = [...robotsData, ...robotsData, ...robotsData];
 
-  const handlePrev = () => {
-    setActiveIndex((prev) => (prev - 1 + robotsData.length) % robotsData.length);
-  };
+  const handleSelect = useCallback((robot: typeof robotsData[0]) => {
+    navigate('/planner', { state: { selectedRobot: robot } });
+  }, [navigate]);
+
+  const handleNext = useCallback(() => {
+    setActiveIndex((prev) => (prev + 1) % extendedRobots.length);
+  }, []);
+
+  const handlePrev = useCallback(() => {
+    setActiveIndex((prev) => (prev - 1 + extendedRobots.length) % extendedRobots.length);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -24,81 +31,118 @@ export default function RobotCarousel() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [handleNext, handlePrev]);
 
-  const handleSelect = (robot: Robot) => {
-    navigate('/planner', { state: { selectedRobot: robot } });
+  // Calculate shortest path offset for circular layout
+  const getOffset = (index: number, currentActive: number, total: number) => {
+    let diff = index - currentActive;
+    if (diff > Math.floor(total / 2)) {
+      diff -= total;
+    } else if (diff < -Math.floor(total / 2)) {
+      diff += total;
+    }
+    return diff;
   };
 
   return (
-    <div style={{ 
-      position: 'relative', 
-      width: '100%', 
-      height: '100%', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center' 
-    }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', justifyContent: 'center' }}>
       
-      {/* Cards Container */}
-      <div style={{ position: 'relative', width: '1000px', height: '600px' }}>
-        {robotsData.map((robot, i) => {
-          let position: 'left' | 'center' | 'right' | 'hidden' = 'hidden';
-          const distance = (i - activeIndex + robotsData.length) % robotsData.length;
-          
-          if (distance === 0) position = 'center';
-          else if (distance === 1) position = 'right';
-          else if (distance === robotsData.length - 1) position = 'left';
-
+      {/* Container for the cards */}
+      <div style={{ position: 'relative', width: '100%', height: '600px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        {extendedRobots.map((robot, i) => {
+          const offset = getOffset(i, activeIndex, extendedRobots.length);
           return (
-            <RobotCard
-              key={robot.id}
+            <RobotCard 
+              key={`${robot.id}-${i}`}
               robot={robot}
-              isActive={position === 'center'}
-              position={position}
-              onClick={() => setActiveIndex(i)}
-              onSelect={handleSelect}
+              isActive={i === activeIndex}
+              offset={offset}
+              onSelect={() => handleSelect(robot)}
             />
           );
         })}
+
+        {/* Navigation Buttons */}
+        <button 
+          onClick={handlePrev}
+          aria-label="Previous robot"
+          style={{ 
+            position: 'absolute', 
+            left: '10%', 
+            zIndex: 20, 
+            padding: '16px', 
+            borderRadius: '50%', 
+            border: 'none', 
+            background: 'var(--sys-colors-surfaces-surface-primary, #ffffff)', 
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)', 
+            cursor: 'pointer', 
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1), background-color 0.2s ease',
+            color: 'var(--sys-colors-text-text-primary, #1a1a1a)'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = '#f0f0f0';
+            e.currentTarget.style.transform = 'scale(1.1)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--sys-colors-surfaces-surface-primary, #ffffff)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          <ChevronLeft />
+        </button>
+        <button 
+          onClick={handleNext}
+          aria-label="Next robot"
+          style={{ 
+            position: 'absolute', 
+            right: '10%', 
+            zIndex: 20, 
+            padding: '16px', 
+            borderRadius: '50%', 
+            border: 'none', 
+            background: 'var(--sys-colors-surfaces-surface-primary, #ffffff)', 
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)', 
+            cursor: 'pointer', 
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'transform 0.2s cubic-bezier(0.25, 0.1, 0.25, 1), background-color 0.2s ease',
+            color: 'var(--sys-colors-text-text-primary, #1a1a1a)'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = '#f0f0f0';
+            e.currentTarget.style.transform = 'scale(1.1)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--sys-colors-surfaces-surface-primary, #ffffff)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          <ChevronRight />
+        </button>
       </div>
 
-      {/* Navigation Controls */}
-      <button 
-        onClick={handlePrev}
-        style={{
-          position: 'absolute', left: '5%', top: '50%', transform: 'translateY(-50%)',
-          background: 'white', border: '1px solid #e0e0e0', boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-          borderRadius: '50%', padding: '16px', cursor: 'pointer', zIndex: 30, color: '#333'
-        }}
-      >
-        <ChevronLeft size={32} />
-      </button>
-
-      <button 
-        onClick={handleNext}
-        style={{
-          position: 'absolute', right: '5%', top: '50%', transform: 'translateY(-50%)',
-          background: 'white', border: '1px solid #e0e0e0', boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-          borderRadius: '50%', padding: '16px', cursor: 'pointer', zIndex: 30, color: '#333'
-        }}
-      >
-        <ChevronRight size={32} />
-      </button>
-
-      {/* Indicator */}
-      <div style={{
-        position: 'absolute',
-        bottom: '40px',
-        color: '#666',
-        fontSize: '16px',
-        fontWeight: 'bold',
-        letterSpacing: '2px',
-        zIndex: 30
+      {/* Indicators */}
+      <div style={{ 
+        width: '100%', 
+        display: 'flex', 
+        justifyContent: 'center', 
+        marginTop: '64px',
+        height: '24px' // stabilize layout
       }}>
-        {activeIndex + 1} / {robotsData.length}
+        <motion.div 
+          key={activeIndex % robotsData.length}
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          style={{ fontSize: '16px', fontWeight: 600, color: 'var(--sys-colors-text-text-secondary, #666)', letterSpacing: '2px' }}
+        >
+          {(activeIndex % robotsData.length) + 1} / {robotsData.length}
+        </motion.div>
       </div>
-
     </div>
   );
 }
