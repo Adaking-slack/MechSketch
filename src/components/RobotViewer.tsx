@@ -1,7 +1,9 @@
-import { Suspense, Component } from 'react';
+import { Suspense, Component, useRef } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF, OrbitControls, Center, Bounds } from '@react-three/drei';
+import * as THREE from 'three';
+import { useRobotAction } from '../context/RobotActionContext';
 
 class ErrorBoundary extends Component<{children: ReactNode, fallback: ReactNode}, {hasError: boolean}> {
   constructor(props: {children: ReactNode, fallback: ReactNode}) {
@@ -24,11 +26,42 @@ class ErrorBoundary extends Component<{children: ReactNode, fallback: ReactNode}
 
 function Model({ url }: { url: string }) {
   const { scene } = useGLTF(url);
+  const { currentAction } = useRobotAction();
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame((state, delta) => {
+    if (!groupRef.current) return;
+
+    if (currentAction === 'pick' || currentAction === 'place') {
+      // Bob up and down
+      groupRef.current.position.y = THREE.MathUtils.lerp(
+        groupRef.current.position.y,
+        Math.sin(state.clock.elapsedTime * 5) * 0.2 + 0.2,
+        0.1
+      );
+    } else if (currentAction === 'rotate') {
+      // Spin fast
+      groupRef.current.rotation.y += delta * 5;
+    } else if (currentAction === 'lift') {
+      // Lift up
+      groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, 1, 0.1);
+    } else if (currentAction === 'weld') {
+      // Shake
+      groupRef.current.position.x = Math.sin(state.clock.elapsedTime * 40) * 0.05;
+      groupRef.current.position.z = Math.cos(state.clock.elapsedTime * 40) * 0.05;
+    } else {
+      // Reset
+      groupRef.current.position.lerp(new THREE.Vector3(0, 0, 0), 0.1);
+      // Don't reset rotation to allow OrbitControls autoRotate to work smoothly
+    }
+  });
 
   return (
     <Bounds fit clip observe margin={1.1}>
       <Center>
-        <primitive object={scene} />
+        <group ref={groupRef}>
+          <primitive object={scene} />
+        </group>
       </Center>
     </Bounds>
   );
