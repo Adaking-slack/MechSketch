@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { ChevronLeft, ChevronRight, User } from 'lucide-react';
-import { DndContext, useDroppable, DragOverlay, closestCenter } from '@dnd-kit/core';
-import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import LeftPanel from '../components/LeftPanel';
 import ActionCard from '../components/ActionCard';
-import RobotViewer from '../components/RobotViewer';
-import { useRobotAction } from '../context/RobotActionContext';
 import { robotsData } from '../data/robots.data';
 import type { ActionCardData } from '../data/robots.data';
+import { Droppable } from '@dnd-kit/dom';
+import { isSortableOperation } from '@dnd-kit/dom/sortable';
+import { manager } from '../utils/dnd';
+
+export interface DroppedAction extends ActionCardData {
+  instanceId: string;
+}
 
 export default function Home() {
   const [leftOpen, setLeftOpen] = useState(true);
@@ -16,46 +19,88 @@ export default function Home() {
   // Dummy state for selected robot
   const [selectedRobot] = useState(robotsData[0]);
   
-  
-  // State for the currently dragged action
-  const [activeAction, setActiveAction] = useState<ActionCardData | null>(null);
-  
-  // Workaround for dnd-kit StrictMode bug in React 18/19
-  const [isMounted, setIsMounted] = useState(false);
+  // State for actions dropped in the canvas
+  const [droppedActions, setDroppedActions] = useState<DroppedAction[]>([]);
+
+  const dropZoneRef = useRef<HTMLDivElement>(null);
+  const [isOver, setIsOver] = useState(false);
+
   useEffect(() => {
-    setIsMounted(true);
+    if (!dropZoneRef.current) return;
+
+    const droppable = new Droppable({
+      id: 'canvas-area',
+      element: dropZoneRef.current,
+    }, manager);
+
+    const unsubscribeDragStart = manager.monitor.addEventListener('dragstart', (e: any) => {
+      console.log('[dragstart] source:', e?.operation?.source?.id);
+    });
+
+    const unsubscribeDragOver = manager.monitor.addEventListener('dragover', (e: any) => {
+      if (e?.operation?.target?.id === 'canvas-area') {
+        setIsOver(true);
+      } else {
+        setIsOver(false);
+      }
+    });
+
+    const unsubscribeDragEnd = manager.monitor.addEventListener('dragend', (e: any) => {
+      setIsOver(false);
+      if (e.canceled) return;
+      
+      const operation = e?.operation;
+      if (!operation || !operation.source || !operation.target) return;
+
+      if (isSortableOperation(operation)) {
+        // Reordering within the canvas
+        const { source, target } = operation;
+        if (source.id !== target.id) {
+          setDroppedActions((prev) => {
+            const oldIndex = prev.findIndex(item => item.instanceId === source.id);
+            const newIndex = prev.findIndex(item => item.instanceId === target.id);
+            if (oldIndex !== -1 && newIndex !== -1) {
+              const newItems = [...prev];
+              const [movedItem] = newItems.splice(oldIndex, 1);
+              newItems.splice(newIndex, 0, movedItem);
+              return newItems;
+            }
+            return prev;
+          });
+        }
+      } else {
+        // Dropping from left panel
+        const sourceData = operation.source.data;
+        if (sourceData && !sourceData.isSortable) {
+          if (operation.target.id === 'canvas-area' || operation.target.data?.isSortable) {
+            setDroppedActions((prev) => {
+              const newItem = { ...sourceData, instanceId: `${sourceData.id}-${Date.now()}` } as DroppedAction;
+              
+              if (operation.target.data?.isSortable) {
+                const targetIndex = prev.findIndex(i => i.instanceId === operation.target.id);
+                if (targetIndex !== -1) {
+                  const newItems = [...prev];
+                  newItems.splice(targetIndex, 0, newItem);
+                  return newItems;
+                }
+              }
+              return [...prev, newItem];
+            });
+          }
+        }
+      }
+    });
+
+    return () => {
+      droppable.destroy();
+      unsubscribeDragStart();
+      unsubscribeDragOver();
+      unsubscribeDragEnd();
+    };
   }, []);
 
-  const { isOver, setNodeRef } = useDroppable({
-    id: '3d-canvas-drop-zone',
-  });
-  
-  const { executeAction } = useRobotAction();
-
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    setActiveAction(active.data.current as ActionCardData);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { over, active } = event;
-    if (over && over.id === '3d-canvas-drop-zone') {
-      executeAction(active.id as string);
-    }
-    setActiveAction(null);
-  };
-
-  if (!isMounted) {
-    return null;
-  }
-
   return (
-    <DndContext 
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart} 
-      onDragEnd={handleDragEnd}
-    >
-      <div style={{ 
+    <div style={{ 
       display: 'flex', 
       flexDirection: 'column',
       width: '100vw', 
@@ -176,8 +221,8 @@ export default function Home() {
 
       {/* Center Canvas Area */}
       <main 
-        ref={setNodeRef}
-        id="3d-canvas-drop-zone"
+        id="canvas-drop-zone"
+        ref={dropZoneRef}
         style={{
           flex: 1,
           position: 'relative',
@@ -186,22 +231,37 @@ export default function Home() {
           alignItems: 'center',
           justifyContent: 'center',
           minWidth: 0, // Prevents layout breakage
-          backgroundColor: isOver ? 'rgba(43, 108, 176, 0.05)' : '#f8fafc',
-          border: isOver ? '2px dashed #2b6cb0' : '2px solid transparent',
+          backgroundColor: isOver ? 'rgba(43, 108, 176, 0.05)' : 'transparent',
+          border: isOver ? '2px solid green' : '2px dashed transparent',
           transition: 'all 0.2s ease',
           margin: '24px',
-          borderRadius: '16px',
-          overflow: 'hidden',
-          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)'
+          borderRadius: '16px'
         }}
       >
-        <div style={{ position: 'absolute', top: 16, left: 24, zIndex: 10, color: '#4a5568', fontWeight: 600, fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          3D Canvas {isOver && <span style={{ color: '#2b6cb0' }}>(Drop here!)</span>}
-        </div>
-        
-        <div style={{ width: '100%', height: '100%', zIndex: 1 }}>
-          <RobotViewer modelUrl={selectedRobot.model} />
-        </div>
+        <canvas id="canvas" style={{ position: 'absolute', width: '100%', height: '100%', zIndex: -1, pointerEvents: 'none' }}></canvas>
+        {droppedActions.length === 0 ? (
+          <div style={{ color: '#a0aec0', fontWeight: 500, pointerEvents: 'none' }}>
+            Drop actions here to build sequence
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', padding: '24px', alignItems: 'center', justifyContent: 'center' }}>
+            {droppedActions.map((action, index) => (
+              <Fragment key={action.instanceId}>
+                <ActionCard 
+                  action={action} 
+                  variant="sortable"
+                  instanceId={action.instanceId}
+                  index={index}
+                  onDelete={() => setDroppedActions((prev) => prev.filter(item => item.instanceId !== action.instanceId))}
+                />
+                {/* Arrow to the next action if not the last one */}
+                {index < droppedActions.length - 1 && (
+                  <ChevronRight size={20} color="#cbd5e0" />
+                )}
+              </Fragment>
+            ))}
+          </div>
+        )}
       </main>
 
       {/* Right Toggle Button */}
@@ -251,13 +311,6 @@ export default function Home() {
         </div>
       </aside>
       </div>
-      
-      <DragOverlay dropAnimation={null}>
-        {activeAction ? (
-          <ActionCard action={activeAction} isOverlay />
-        ) : null}
-      </DragOverlay>
     </div>
-    </DndContext>
   );
 }
