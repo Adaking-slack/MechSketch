@@ -30,6 +30,14 @@ class ErrorBoundary extends Component<{children: ReactNode, fallback: ReactNode}
 function Model({ url, position }: { url: string; position?: [number, number, number] }) {
   const { scene } = useGLTF(url);
 
+  useEffect(() => {
+    if (scene) {
+      scene.position.set(0, 0, 0);
+      scene.rotation.set(0, 0, 0);
+      scene.updateMatrixWorld(true);
+    }
+  }, [scene]);
+
   return (
     <Bounds fit clip observe margin={1.1}>
       <Center>
@@ -45,90 +53,13 @@ interface SimulatedRobotProps {
   targetRotation?: number;
 }
 
-function SimulatedRobot({ robotModelUrl, targetPosition, targetRotation = 0 }: SimulatedRobotProps) {
+function SimulatedRobot({ robotModelUrl }: SimulatedRobotProps) {
   const { scene } = useGLTF(robotModelUrl);
-  
-  const bones = useMemo(() => {
-    const arr: THREE.Object3D[] = [];
-    scene.traverse((child) => {
-      // Extract bones based on standard types or naming conventions
-      if ((child as THREE.Bone).isBone || child.name.toLowerCase().includes('joint') || child.name.toLowerCase().includes('bone')) {
-        arr.push(child);
-      }
-    });
-    // If no bones found, grab top-level groups to act as joints
-    if (arr.length === 0) {
-      scene.children.forEach(child => {
-        if (child.type === 'Group' || child.type === 'Object3D') arr.push(child);
-      });
-    }
-    return arr;
-  }, [scene]);
 
-  const targetRef = useRef(targetPosition);
-  const rotationRef = useRef(targetRotation);
-
-  useEffect(() => {
-    targetRef.current = targetPosition;
-  }, [targetPosition]);
-
-  useEffect(() => {
-    rotationRef.current = targetRotation;
-  }, [targetRotation]);
-
-  useFrame((_, delta) => {
-    const targetVec = new Vector3(targetRef.current.x, targetRef.current.y, targetRef.current.z);
-    
-    if (bones.length > 0) {
-      // 1. Base Rotation (first bone)
-      const baseBone = bones[0];
-      const targetRot = rotationRef.current;
-      const currentRot = baseBone.rotation.y;
-      const rotDiff = targetRot - currentRot;
-      if (Math.abs(rotDiff) > 0.01) {
-        baseBone.rotation.y += rotDiff * Math.min(delta * 3, 1);
-      }
-      
-      // 2. CCD IK solver for the rest of the kinematic chain
-      if (bones.length > 2) {
-        const endEffector = bones[bones.length - 1];
-        
-        for (let i = 0; i < 2; i++) { // 2 IK iterations per frame for smooth convergence
-          for (let j = bones.length - 2; j >= 1; j--) {
-            const bone = bones[j];
-            const effPos = endEffector.getWorldPosition(new Vector3());
-            const bonePos = bone.getWorldPosition(new Vector3());
-            
-            const effDir = effPos.clone().sub(bonePos).normalize();
-            const targetDir = targetVec.clone().sub(bonePos).normalize();
-            
-            const angle = effDir.angleTo(targetDir);
-            if (angle > 0.001) {
-              const axis = new Vector3().crossVectors(effDir, targetDir).normalize();
-              const appliedAngle = Math.min(angle, delta * 3); // Damped rotation
-              
-              bone.rotateOnWorldAxis(axis, appliedAngle);
-              
-              // Optional: clamp joint angles here if known bounds exist
-              
-              bone.updateMatrixWorld(true);
-            }
-          }
-        }
-      }
-    } else {
-      // Fallback: move entire scene if absolutely no joints exist
-      const current = scene.position;
-      const diff = targetVec.clone().sub(current);
-      if (diff.length() > 0.01) {
-        scene.position.add(diff.multiplyScalar(Math.min(delta * 2.5, 1)));
-      }
-      const currentRot = scene.rotation.y;
-      const rotDiff = rotationRef.current - currentRot;
-      if (Math.abs(rotDiff) > 0.01) {
-        scene.rotation.y += rotDiff * Math.min(delta * 3, 1);
-      }
-    }
+  useFrame(() => {
+    // STEP 5: ADD ONLY MINIMAL TEST CONTROL
+    // Rotate the entire robot scene slowly to confirm rendering is stable.
+    scene.rotation.y += 0.01;
   });
 
   return (
@@ -352,7 +283,7 @@ export default function WorkspaceCanvas({
                   <SimTargetMarker
                     key={`sim-target-${target.id}`}
                     target={target}
-                    isActive={simState?.currentBlockIndex != null ? simState.currentBlockIndex >= 0 : false}
+                    isActive={(simState?.currentBlockIndex ?? -1) >= 0}
                   />
                 ))}
 
