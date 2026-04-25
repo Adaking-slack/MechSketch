@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import LeftPanel from '../components/LeftPanel';
 import TopNav from '../components/TopNav';
@@ -17,6 +18,13 @@ export default function Home() {
   const [rightOpen, setRightOpen] = useState(true);
   const [simulationMode, setSimulationMode] = useState(false);
   const [simulationPaused, setSimulationPaused] = useState(false);
+  const [simulationCompleted, setSimulationCompleted] = useState(false);
+  const [showStartNewModal, setShowStartNewModal] = useState(false);
+  const [showNoActionsModal, setShowNoActionsModal] = useState(false);
+  const [showNoTargetsModal, setShowNoTargetsModal] = useState(false);
+  const [highlightAddTarget, setHighlightAddTarget] = useState(false);
+  
+  const navigate = useNavigate();
   
   const selectedRobot = loadSelectedRobot();
   const selectedObject = loadSelectedObject();
@@ -44,13 +52,24 @@ export default function Home() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showStartNewModal) {
+          setShowStartNewModal(false);
+        }
+        if (showNoActionsModal) {
+          setShowNoActionsModal(false);
+        }
+        if (showNoTargetsModal) {
+          setShowNoTargetsModal(false);
+        }
+      }
       if ((e.key === 'Delete' || e.key === 'Backspace') && sequenceBlocks.length > 0 && !activeBlockId && !editingTargetId) {
         setSequenceBlocks(prev => prev.slice(0, -1));
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [sequenceBlocks, activeBlockId, editingTargetId]);
+  }, [sequenceBlocks, activeBlockId, editingTargetId, showStartNewModal, showNoActionsModal, showNoTargetsModal]);
 
   const activeBlock = sequenceBlocks.find(b => b.instanceId === activeBlockId);
   const editingTarget = targets.find(t => t.id === editingTargetId);
@@ -62,7 +81,176 @@ export default function Home() {
   }, []);
 
   const handleSimulate = useCallback(() => {
-    console.log('Simulate clicked', { sequenceBlocksLength: sequenceBlocks.length, targetsLength: targets.length, paused: simulationPaused });
+    console.log('Simulate clicked', { sequenceBlocksLength: sequenceBlocks.length, targetsLength: targets.length, paused: simulationPaused, mode: simulationMode });
+
+    if (simulationMode) {
+      if (simulationPaused) {
+        console.log('Resuming simulation');
+        setSimulationPaused(false);
+        setSimState(s => s ? { ...s, executionState: 'executing' } : s);
+        
+        const resumeExecution = () => {
+          if (!simulationRef.current.running) return;
+          
+          const blockIndex = simulationRef.current.blockIndex;
+          if (blockIndex >= sequenceBlocks.length) {
+            console.log('Sequence complete');
+            simulationRef.current.running = false;
+            setSimulationMode(false);
+            setSimulationPaused(false);
+            setSimulationCompleted(true);
+            setActiveBlockId(null);
+            setSimMessage('Simulation complete');
+            if (simState) {
+              const committedObjects = objectState.objects.map(existingObj => {
+                const simObj = simState.objects.find(so => so.id === existingObj.id);
+                if (simObj) return { ...existingObj, position: simObj.position };
+                return existingObj;
+              });
+              const newObjectState = { ...objectState, objects: committedObjects };
+              setObjectState(newObjectState);
+              saveObjectState(newObjectState);
+            }
+            setSimState(null);
+            return;
+          }
+
+          const block = sequenceBlocks[blockIndex];
+          setActiveBlockId(block.instanceId);
+
+          const target = targets.find(t => {
+            if (block.params?.targetId === t.id) return true;
+            if (block.params?.targetX !== undefined) {
+              const bx = block.params.targetX;
+              const by = block.params.targetY || 0;
+              const bz = block.params.targetZ || 0;
+              return Math.abs(t.position.x - bx) < 0.01 && Math.abs(t.position.y - by) < 0.01 && Math.abs(t.position.z - bz) < 0.01;
+            }
+            return false;
+          });
+
+          let delay = 1000;
+          setSimState(currentState => {
+            if (!currentState) return currentState;
+            const nextState = { ...currentState, currentBlockIndex: blockIndex };
+
+            switch (block.type) {
+              case 'move': {
+                if (target) {
+                  nextState.robotPosition = { ...target.position };
+                  nextState.message = `Moving to ${target.name}`;
+                  delay = 1500;
+                } else if (block.params?.targetX !== undefined) {
+                  nextState.robotPosition = { x: block.params.targetX, y: block.params.targetY || 0, z: block.params.targetZ || 0 };
+                  nextState.message = 'Moving to position';
+                  delay = 1500;
+                } else {
+                  setSimMessage('No position for Move');
+                  delay = 500;
+                }
+                if (nextState.heldObject) {
+                  nextState.objects = nextState.objects.map(o => o.id === nextState.heldObject!.id ? { ...o, position: { ...nextState.robotPosition } } : o);
+                }
+                break;
+              }
+              case 'pick': {
+                let objToPick = null;
+                const availableObjects = nextState.objects.filter(o => o.state !== 'held');
+                if (target) {
+                  objToPick = availableObjects.find(o => o.targetId === target.id);
+                  if (!objToPick) {
+                    let minDistance = Infinity;
+                    for (const o of availableObjects) {
+                      const dx = o.position.x - target.position.x;
+                      const dz = o.position.z - target.position.z;
+                      const dist = Math.sqrt(dx * dx + dz * dz);
+                      if (dist < minDistance) {
+                        minDistance = dist;
+                        objToPick = o;
+                      }
+                    }
+                  }
+                } else {
+                  let minDistance = Infinity;
+                  for (const o of availableObjects) {
+                    const dx = o.position.x - nextState.robotPosition.x;
+                    const dz = o.position.z - nextState.robotPosition.z;
+                    const dist = Math.sqrt(dx * dx + dz * dz);
+                    if (dist < minDistance) {
+                      minDistance = dist;
+                      objToPick = o;
+                    }
+                  }
+                }
+                if (objToPick) {
+                  nextState.heldObject = objToPick;
+                  nextState.objects = nextState.objects.map(o => o.id === objToPick!.id ? { ...o, state: 'held', currentHolderId: 'robot' } : o);
+                  nextState.message = `Picked ${objToPick.id}`;
+                } else {
+                  nextState.message = 'No object to pick';
+                }
+                delay = 1000;
+                break;
+              }
+              case 'place': {
+                if (nextState.heldObject && target) {
+                  const placementY = target.type === 'zone' ? target.position.y + 0.20 : target.position.y + 0.05;
+                  const placementPos = { x: target.position.x, y: placementY, z: target.position.z };
+                  nextState.objects = nextState.objects.map(o => o.id === nextState.heldObject!.id ? { ...o, position: placementPos, targetId: target.id, state: 'placed', currentHolderId: null } : o);
+                  nextState.heldObject = null;
+                  nextState.message = `Placed at ${target.name}`;
+                } else if (nextState.heldObject) {
+                  const dropPos = { ...nextState.robotPosition, y: 0 };
+                  nextState.objects = nextState.objects.map(o => o.id === nextState.heldObject!.id ? { ...o, position: dropPos, targetId: null, state: 'placed', currentHolderId: null } : o);
+                  nextState.heldObject = null;
+                  nextState.message = 'Placed object';
+                } else {
+                  nextState.message = 'No object held to place';
+                }
+                delay = 1000;
+                break;
+              }
+              case 'rotate': {
+                const angle = block.params?.angle || 90;
+                nextState.robotRotation = (nextState.robotRotation || 0) + (angle * Math.PI / 180);
+                nextState.message = `Rotating ${angle}°`;
+                delay = 1000;
+                break;
+              }
+              case 'wait': {
+                const waitDuration = (block.params?.duration || 1) * 1000;
+                nextState.message = `Waiting ${block.params?.duration || 1}s`;
+                delay = waitDuration;
+                break;
+              }
+              case 'inspect': {
+                nextState.message = 'Inspecting...';
+                delay = 1000;
+                break;
+              }
+              default:
+                nextState.message = `Unknown action: ${block.type}`;
+                delay = 500;
+            }
+            return nextState;
+          });
+
+          simulationRef.current.blockIndex++;
+          simulationRef.current.timeout = setTimeout(resumeExecution, delay);
+        };
+        
+        simulationRef.current.timeout = setTimeout(resumeExecution, 500);
+      } else {
+        console.log('Pausing simulation');
+        setSimulationPaused(true);
+        setSimState(s => s ? { ...s, executionState: 'paused' } : s);
+        if (simulationRef.current.timeout) {
+          clearTimeout(simulationRef.current.timeout);
+          simulationRef.current.timeout = null;
+        }
+      }
+      return;
+    }
 
     const runSimulation = () => {
       if (!simulationRef.current.running || simulationPaused) return;
@@ -72,9 +260,31 @@ export default function Home() {
         console.log('Sequence complete');
         simulationRef.current.running = false;
         setSimulationMode(false);
-        setSimState(s => s ? { ...s, currentBlockIndex: -1, isPlaying: false, executionState: 'completed', message: 'Simulation complete' } : s);
+        setSimulationPaused(false);
+        setSimulationCompleted(true);
         setActiveBlockId(null);
         setSimMessage('Simulation complete');
+
+        if (simState) {
+          const committedObjects = objectState.objects.map(existingObj => {
+            const simObj = simState.objects.find(so => so.id === existingObj.id);
+            if (simObj) {
+              return {
+                ...existingObj,
+                position: simObj.position,
+              };
+            }
+            return existingObj;
+          });
+          const newObjectState = {
+            ...objectState,
+            objects: committedObjects,
+          };
+          setObjectState(newObjectState);
+          saveObjectState(newObjectState);
+        }
+
+        setSimState(null);
         return;
       }
 
@@ -242,37 +452,13 @@ export default function Home() {
         return nextState;
       });
 
-      simulationRef.current.blockIndex++;
+simulationRef.current.blockIndex++;
       simulationRef.current.timeout = setTimeout(runSimulation, delay);
     }
-
-    if (simulationRef.current.running) {
-      if (simulationPaused) {
-        console.log('Resuming simulation');
-        setSimulationPaused(false);
-        setSimState(s => s ? { ...s, executionState: 'executing' } : s);
-        simulationRef.current.timeout = setTimeout(runSimulation, 500);
-      } else {
-        console.log('Pausing simulation');
-        setSimulationPaused(true);
-        setSimState(s => s ? { ...s, executionState: 'paused' } : s);
-        if (simulationRef.current.timeout) {
-          clearTimeout(simulationRef.current.timeout);
-          simulationRef.current.timeout = null;
-        }
-      }
-      return;
-    }
-
-    if (sequenceBlocks.length === 0) {
-      console.log('No actions to simulate');
-      setSimMessage('No actions to simulate');
-      return;
-    }
-
+    
     if (targets.length === 0) {
       console.log('No targets defined');
-      setSimMessage('No targets defined');
+      setShowNoTargetsModal(true);
       return;
     }
 
@@ -286,6 +472,7 @@ export default function Home() {
     setSimMessage(null);
     setSimulationMode(true);
     setSimulationPaused(false);
+    setSimulationCompleted(false);
     setEditingTargetId(null);
     setActiveBlockId(null);
     setSelectedTargetId(null);
@@ -387,9 +574,94 @@ export default function Home() {
     simulationRef.current.running = false;
     setSimulationMode(false);
     setSimulationPaused(false);
-    setSimState(null);
     setSimMessage(null);
     setActiveBlockId(null);
+
+    if (simState) {
+      const committedObjects = objectState.objects.map(existingObj => {
+        const simObj = simState.objects.find(so => so.id === existingObj.id);
+        if (simObj) {
+          return {
+            ...existingObj,
+            position: simObj.position,
+          };
+        }
+        return existingObj;
+      });
+      const newObjectState = {
+        ...objectState,
+        objects: committedObjects,
+      };
+      setObjectState(newObjectState);
+      saveObjectState(newObjectState);
+    }
+
+    setSimState(null);
+  }, [simState, objectState]);
+
+  const handleStartNewClick = useCallback(() => {
+    setShowStartNewModal(true);
+  }, []);
+
+  const handleStartNewConfirm = useCallback(() => {
+    console.log('Starting new project');
+    setShowStartNewModal(false);
+    setSimulationMode(false);
+    setSimulationPaused(false);
+    setSimulationCompleted(false);
+    setSimState(null);
+    setSimMessage(null);
+    setSequenceBlocks([]);
+    setActiveBlockId(null);
+    setTargets([]);
+    setSelectedTargetId(null);
+    setEditingTargetId(null);
+
+    const emptyObjectState = { objects: [], selectedObjectId: null, newlyAddedObjectId: null };
+    setObjectState(emptyObjectState);
+    saveObjectState(emptyObjectState);
+  }, []);
+
+  const handleSettings = useCallback(() => {
+    console.log('Settings clicked');
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    console.log('Logging out');
+    setSimulationMode(false);
+    setSimulationPaused(false);
+    setSimulationCompleted(false);
+    setSimState(null);
+    setSimMessage(null);
+    if (simulationRef.current.timeout) {
+      clearTimeout(simulationRef.current.timeout);
+      simulationRef.current.timeout = null;
+    }
+    navigate('/auth?view=login');
+  }, [navigate]);
+
+  const handleStartNewCancel = useCallback(() => {
+    setShowStartNewModal(false);
+  }, []);
+
+  const handleNoActionsModalDismiss = useCallback(() => {
+    setShowNoActionsModal(false);
+  }, []);
+
+  const handleNoActionsModalGoToSequence = useCallback(() => {
+    setShowNoActionsModal(false);
+    setRightOpen(true);
+  }, []);
+
+  const handleNoTargetsModalDismiss = useCallback(() => {
+    setShowNoTargetsModal(false);
+  }, []);
+
+  const handleNoTargetsModalAddTarget = useCallback(() => {
+    setShowNoTargetsModal(false);
+    setLeftOpen(true);
+    setHighlightAddTarget(true);
+    setTimeout(() => setHighlightAddTarget(false), 3000);
   }, []);
 
   // Automatically add the selected object to the scene if it doesn't match the current one
@@ -482,16 +754,20 @@ export default function Home() {
         onSimulate={handleSimulate}
         onShare={handleShare}
         onStop={handleStopSimulate}
+        onStartNew={handleStartNewClick}
+        onSettings={handleSettings}
+        onLogout={handleLogout}
         simulationMode={simulationMode}
         simulationPaused={simulationPaused}
+        simulationCompleted={simulationCompleted}
         robotName={selectedRobot?.name}
         objectName={selectedObject?.name}
       />
 
       <div style={{ display: 'flex', flex: 1, position: 'relative', overflow: 'hidden' }}>
-        <aside style={{ width: simulationMode ? 0 : (leftOpen ? '280px' : '0px'), height: '100%', backgroundColor: '#ffffff', borderRight: leftOpen && !simulationMode ? '1px solid #e2e8f0' : 'none', boxShadow: leftOpen && !simulationMode ? '4px 0 16px rgba(0,0,0,0.02)' : 'none', zIndex: 10, transition: 'all 0.3s', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          {!simulationMode && <div style={{ width: '280px', padding: '24px', boxSizing: 'border-box', height: '100%', overflow: 'hidden' }}>
-            <LeftPanel robot={selectedRobot} onActionClick={handleAddAction} targets={targets} selectedTargetId={selectedTargetId} onTargetSelect={handleTargetSelectFromCanvas} onAddTarget={handleAddTarget} onDeleteTarget={handleDeleteTarget} />
+        <aside style={{ width: simulationMode && !simulationCompleted ? 0 : (leftOpen ? '280px' : '0px'), height: '100%', backgroundColor: '#ffffff', borderRight: leftOpen && !(simulationMode && !simulationCompleted) ? '1px solid #e2e8f0' : 'none', boxShadow: leftOpen && !(simulationMode && !simulationCompleted) ? '4px 0 16px rgba(0,0,0,0.02)' : 'none', zIndex: 10, transition: 'all 0.3s', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          {!(simulationMode && !simulationCompleted) && <div style={{ width: '280px', padding: '24px', boxSizing: 'border-box', height: '100%', overflow: 'hidden' }}>
+            <LeftPanel robot={selectedRobot} onActionClick={handleAddAction} targets={targets} selectedTargetId={selectedTargetId} onTargetSelect={handleTargetSelectFromCanvas} onAddTarget={handleAddTarget} onDeleteTarget={handleDeleteTarget} highlightAddTarget={highlightAddTarget} />
           </div>}
         </aside>
 
@@ -502,7 +778,7 @@ export default function Home() {
         <main style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 0, margin: '16px', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#f0f2f5', backgroundImage: 'linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
           {selectedRobot ? (
             <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-<WorkspaceCanvas robotModelUrl={selectedRobot.model} simulationMode={simulationMode} simState={simState} targets={targets}>
+<WorkspaceCanvas robotModelUrl={selectedRobot.model} simulationMode={simulationMode} simulationPaused={simulationPaused} simState={simState} targets={targets}>
                 {simulationMode && targets.length > 0 && (
                   <TargetViewer targets={targets} selectedTargetId={null} onTargetSelect={() => {}} newlyAddedTargetId={null} />
                 )}
@@ -575,6 +851,189 @@ export default function Home() {
           </div>
         </aside>
       </div>
+
+      {showStartNewModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }} onClick={handleStartNewCancel}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '90%',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2)',
+          }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: 600, color: '#1a1a1a' }}>
+              Start a New Project?
+            </h2>
+            <p style={{ margin: '0 0 24px 0', fontSize: '15px', color: '#555', lineHeight: 1.5 }}>
+              This will clear your current workspace, including all objects, robot actions, and sequences. This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={handleStartNewCancel}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: '1px solid #ddd',
+                  backgroundColor: '#fff',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}>
+                Cancel
+              </button>
+              <button
+                onClick={handleStartNewConfirm}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#EF4444',
+                  color: '#fff',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}>
+                Start New
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNoActionsModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }} onClick={handleNoActionsModalDismiss}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '90%',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2)',
+          }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: 600, color: '#1a1a1a' }}>
+              Nothing to Simulate Yet
+            </h2>
+            <p style={{ margin: '0 0 24px 0', fontSize: '15px', color: '#555', lineHeight: 1.5 }}>
+              You haven&apos;t added any actions to your sequence yet. Add at least one action card before running the simulation.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={handleNoActionsModalDismiss}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: '1px solid #ddd',
+                  backgroundColor: '#fff',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}>
+                Dismiss
+              </button>
+              <button
+                onClick={handleNoActionsModalGoToSequence}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#00376E',
+                  color: '#fff',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}>
+                Add Actions
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNoTargetsModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }} onClick={handleNoTargetsModalDismiss}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '90%',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2)',
+          }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: 600, color: '#1a1a1a' }}>
+              No Target Found
+            </h2>
+            <p style={{ margin: '0 0 24px 0', fontSize: '15px', color: '#555', lineHeight: 1.5 }}>
+              You can&apos;t run a simulation because no target has been placed in the scene. Add at least one target to continue.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={handleNoTargetsModalDismiss}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: '1px solid #ddd',
+                  backgroundColor: '#fff',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}>
+                Dismiss
+              </button>
+              <button
+                onClick={handleNoTargetsModalAddTarget}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#00376E',
+                  color: '#fff',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}>
+                Add Target
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

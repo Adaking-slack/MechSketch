@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Share2, ChevronDown, Square, Play, Pause } from 'lucide-react';
+import { Share2, ChevronDown, Square, Play, Pause, RotateCcw, Settings, LogOut } from 'lucide-react';
 
 interface TopNavProps {
   projectName?: string;
@@ -12,8 +12,12 @@ interface TopNavProps {
   onSimulate?: () => void;
   onShare?: () => void;
   onStop?: () => void;
+  onStartNew?: () => void;
+  onSettings?: () => void;
+  onLogout?: () => void;
   simulationMode?: boolean;
   simulationPaused?: boolean;
+  simulationCompleted?: boolean;
 }
 
 export default function TopNav({
@@ -26,11 +30,17 @@ export default function TopNav({
   onSimulate,
   onShare,
   onStop,
+  onStartNew,
+  onSettings,
+  onLogout,
   simulationMode = false,
   simulationPaused = false,
+  simulationCompleted = false,
 }: TopNavProps) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(projectName);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -40,6 +50,34 @@ export default function TopNav({
       inputRef.current.select();
     }
   }, [editing]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu]);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowUserMenu(false);
+      }
+    };
+    if (showUserMenu) {
+      document.addEventListener('keydown', handleEscape);
+    }
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [showUserMenu]);
 
   const handleNameSubmit = () => {
     setEditing(false);
@@ -138,6 +176,13 @@ export default function TopNav({
             )}
           </button>
 
+          {!simulationMode && simulationCompleted && (
+            <button onClick={onStartNew} style={styles.startNewBtn}>
+              <RotateCcw size={12} style={{ marginRight: '4px' }} />
+              Start New
+            </button>
+          )}
+
           {!simulationMode && (
             <button onClick={onShare} style={styles.shareBtn}>
               <Share2 size={14} style={styles.shareIcon} />
@@ -145,9 +190,39 @@ export default function TopNav({
             </button>
           )}
 
-          <div style={styles.userSection}>
-            <div style={styles.avatar}>{userInitial}</div>
-            <ChevronDown size={18} style={styles.chevron} />
+          <div style={{ position: 'relative' }} ref={userMenuRef}>
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              style={styles.userSection}
+            >
+              <div style={styles.avatar}>{userInitial}</div>
+              <ChevronDown size={18} style={styles.chevron} />
+            </button>
+
+            {showUserMenu && (
+              <div style={styles.userDropdown}>
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    onSettings?.();
+                  }}
+                  style={styles.dropdownItem}
+                >
+                  <Settings size={16} />
+                  <span>Settings</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    onLogout?.();
+                  }}
+                  style={{ ...styles.dropdownItem, borderTop: '1px solid #e2e8f0' }}
+                >
+                  <LogOut size={16} />
+                  <span>Log out</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -287,12 +362,32 @@ centerSection: {
   shareIcon: {
     flexShrink: 0,
   },
+  startNewBtn: {
+    backgroundColor: '#EF4444',
+    color: '#FFFFFF',
+    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    fontSize: '13px',
+    lineHeight: '18px',
+    fontWeight: 500,
+    border: 'none',
+    borderRadius: '6px',
+    padding: '8px 16px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    transition: 'background-color 0.15s',
+  },
   userSection: {
     display: 'flex',
     alignItems: 'center',
     gap: '4px',
     cursor: 'pointer',
     marginLeft: '4px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    padding: '4px',
+    borderRadius: '6px',
   },
   avatar: {
     width: '32px',
@@ -310,5 +405,34 @@ centerSection: {
   },
   chevron: {
     color: '#374049',
+  },
+  userDropdown: {
+    position: 'absolute',
+    top: '100%',
+    right: 0,
+    marginTop: '8px',
+    backgroundColor: '#ffffff',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+    border: '1px solid #e2e8f0',
+    minWidth: '160px',
+    overflow: 'hidden',
+    zIndex: 100,
+  },
+  dropdownItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    width: '100%',
+    padding: '12px 16px',
+    backgroundColor: 'transparent',
+    border: 'none',
+    borderRadius: 0,
+    fontSize: '14px',
+    fontWeight: 500,
+    color: '#374049',
+    cursor: 'pointer',
+    textAlign: 'left',
+    transition: 'background-color 0.15s',
   },
 };

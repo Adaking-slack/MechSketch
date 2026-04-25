@@ -12,6 +12,7 @@ interface LeftPanelProps {
   onTargetSelect?: (id: string) => void;
   onAddTarget?: (type: TargetType) => void;
   onDeleteTarget?: (id: string) => void;
+  highlightAddTarget?: boolean;
 }
 
 
@@ -70,6 +71,7 @@ export default function LeftPanel({
   onTargetSelect,
   onAddTarget,
   onDeleteTarget,
+  highlightAddTarget = false,
 }: LeftPanelProps) {
   const [showAddTarget, setShowAddTarget] = useState(false);
 
@@ -105,11 +107,38 @@ export default function LeftPanel({
           <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#4a5568' }}>Targets</h3>
           <button
             onClick={() => setShowAddTarget(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', backgroundColor: 'transparent', border: '1px solid #e2e8f0', borderRadius: '4px', fontSize: '12px', fontWeight: 500, color: '#4a5568', cursor: 'pointer' }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '4px 8px',
+              backgroundColor: highlightAddTarget ? '#00376E' : 'transparent',
+              border: `2px solid ${highlightAddTarget ? '#00376E' : '#e2e8f0'}`,
+              borderRadius: '4px',
+              fontSize: '12px',
+              fontWeight: 500,
+              color: highlightAddTarget ? '#ffffff' : '#4a5568',
+              cursor: 'pointer',
+              boxShadow: highlightAddTarget ? '0 0 0 3px rgba(0, 55, 110, 0.3)' : 'none',
+              transition: 'all 0.2s ease',
+            }}
           >
             <Plus size={12} />Add Target
           </button>
         </div>
+        {highlightAddTarget && (
+          <div style={{
+            marginBottom: '12px',
+            padding: '8px 12px',
+            backgroundColor: '#E8F0F8',
+            borderRadius: '6px',
+            fontSize: '12px',
+            color: '#00376E',
+            fontWeight: 500,
+          }}>
+            Click here to add a target
+          </div>
+        )}
 
         {targets.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

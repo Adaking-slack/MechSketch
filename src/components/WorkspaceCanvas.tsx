@@ -49,16 +49,14 @@ function Model({ url, position }: { url: string; position?: [number, number, num
 
 interface SimulatedRobotProps {
   robotModelUrl: string;
-  targetPosition: { x: number; y: number; z: number };
-  targetRotation?: number;
+  simulationPaused?: boolean;
 }
 
-function SimulatedRobot({ robotModelUrl }: SimulatedRobotProps) {
+function SimulatedRobot({ robotModelUrl, simulationPaused = false }: SimulatedRobotProps) {
   const { scene } = useGLTF(robotModelUrl);
 
   useFrame(() => {
-    // STEP 5: ADD ONLY MINIMAL TEST CONTROL
-    // Rotate the entire robot scene slowly to confirm rendering is stable.
+    if (simulationPaused) return;
     scene.rotation.y += 0.01;
   });
 
@@ -183,19 +181,20 @@ interface SimulatedObjectProps {
   object: SimObject;
   held: boolean;
   robotPosition: { x: number; y: number; z: number };
+  simulationPaused?: boolean;
 }
 
-function SimulatedObject({ object, held, robotPosition }: SimulatedObjectProps) {
+function SimulatedObject({ object, held, robotPosition, simulationPaused = false }: SimulatedObjectProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const positionRef = useRef(object.position);
 
-  // Update position ref when object position changes
   useEffect(() => {
     positionRef.current = object.position;
   }, [object.position]);
 
   useFrame((_, delta) => {
     if (!meshRef.current) return;
+    if (simulationPaused) return;
 
     if (held) {
       // Object is attached to robot - move with robot
@@ -247,6 +246,7 @@ function Ground() {
 interface WorkspaceCanvasProps {
   robotModelUrl: string;
   simulationMode?: boolean;
+  simulationPaused?: boolean;
   simState?: SimState | null;
   onSimStateChange?: (state: SimState) => void;
   targets?: Target[];
@@ -256,6 +256,7 @@ interface WorkspaceCanvasProps {
 export default function WorkspaceCanvas({
   robotModelUrl,
   simulationMode = false,
+  simulationPaused = false,
   simState,
   targets = [],
   children
@@ -291,8 +292,7 @@ export default function WorkspaceCanvas({
                 {simState && (
                   <SimulatedRobot
                     robotModelUrl={robotModelUrl}
-                    targetPosition={simState.robotPosition}
-                    targetRotation={simState.robotRotation}
+                    simulationPaused={simulationPaused}
                   />
                 )}
 
@@ -303,6 +303,7 @@ export default function WorkspaceCanvas({
                     object={obj}
                     held={simState.heldObject?.id === obj.id}
                     robotPosition={simState.robotPosition}
+                    simulationPaused={simulationPaused}
                   />
                 ))}
               </>
