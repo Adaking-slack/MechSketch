@@ -328,7 +328,7 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const [error, setError] = useState<string | undefined>();
+  const [_error, setError] = useState<string | undefined>();
   const [emailError, setEmailError] = useState<string | undefined>();
   const [passwordError, setPasswordError] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);

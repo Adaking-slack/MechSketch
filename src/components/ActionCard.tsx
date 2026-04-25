@@ -13,7 +13,7 @@ interface ActionCardProps {
   onClick?: () => void;
 }
 
-export default function ActionCard({ action, isOverlay, isDraggable = true, variant, instanceId, index, onDelete, onClick }: ActionCardProps) {
+export default function ActionCard({ action, isOverlay, isDraggable = true, variant: _variant, instanceId: _instanceId, index: _index, onDelete, onClick }: ActionCardProps) {
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -45,8 +45,8 @@ export default function ActionCard({ action, isOverlay, isDraggable = true, vari
     alignItems: 'center',
     gap: '12px',
     cursor: 'pointer',
-    userSelect: 'none',
-    marginBottom: isOverlay || !isDraggable ? '0px' : '12px',
+    userSelect: 'none' as React.CSSProperties["userSelect"],
+    marginBottom: isOverlay || !isDraggable ? 0 : '12px',
   };
 
   const IconComponent = (Icons as any)[action.icon] || Icons.Circle;

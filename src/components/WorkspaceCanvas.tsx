@@ -46,7 +46,25 @@ interface SimulatedRobotProps {
 }
 
 function SimulatedRobot({ robotModelUrl, targetPosition, targetRotation = 0 }: SimulatedRobotProps) {
-  const groupRef = useRef<THREE.Group>(null);
+  const { scene } = useGLTF(robotModelUrl);
+  
+  const bones = useMemo(() => {
+    const arr: THREE.Object3D[] = [];
+    scene.traverse((child) => {
+      // Extract bones based on standard types or naming conventions
+      if ((child as THREE.Bone).isBone || child.name.toLowerCase().includes('joint') || child.name.toLowerCase().includes('bone')) {
+        arr.push(child);
+      }
+    });
+    // If no bones found, grab top-level groups to act as joints
+    if (arr.length === 0) {
+      scene.children.forEach(child => {
+        if (child.type === 'Group' || child.type === 'Object3D') arr.push(child);
+      });
+    }
+    return arr;
+  }, [scene]);
+
   const targetRef = useRef(targetPosition);
   const rotationRef = useRef(targetRotation);
 
@@ -59,34 +77,66 @@ function SimulatedRobot({ robotModelUrl, targetPosition, targetRotation = 0 }: S
   }, [targetRotation]);
 
   useFrame((_, delta) => {
-    if (!groupRef.current) return;
-
-    // Position interpolation
-    const target = new Vector3(targetRef.current.x, targetRef.current.y, targetRef.current.z);
-    const current = groupRef.current.position;
-    const diff = target.clone().sub(current);
-
-    if (diff.length() > 0.01) {
-      const speed = 2.5;
-      const step = diff.multiplyScalar(Math.min(delta * speed, 1));
-      groupRef.current.position.add(step);
-    }
-
-    // Rotation interpolation
-    const targetRot = rotationRef.current;
-    const currentRot = groupRef.current.rotation.y;
-    const rotDiff = targetRot - currentRot;
+    const targetVec = new Vector3(targetRef.current.x, targetRef.current.y, targetRef.current.z);
     
-    if (Math.abs(rotDiff) > 0.01) {
-      const rotSpeed = 3;
-      groupRef.current.rotation.y += rotDiff * Math.min(delta * rotSpeed, 1);
+    if (bones.length > 0) {
+      // 1. Base Rotation (first bone)
+      const baseBone = bones[0];
+      const targetRot = rotationRef.current;
+      const currentRot = baseBone.rotation.y;
+      const rotDiff = targetRot - currentRot;
+      if (Math.abs(rotDiff) > 0.01) {
+        baseBone.rotation.y += rotDiff * Math.min(delta * 3, 1);
+      }
+      
+      // 2. CCD IK solver for the rest of the kinematic chain
+      if (bones.length > 2) {
+        const endEffector = bones[bones.length - 1];
+        
+        for (let i = 0; i < 2; i++) { // 2 IK iterations per frame for smooth convergence
+          for (let j = bones.length - 2; j >= 1; j--) {
+            const bone = bones[j];
+            const effPos = endEffector.getWorldPosition(new Vector3());
+            const bonePos = bone.getWorldPosition(new Vector3());
+            
+            const effDir = effPos.clone().sub(bonePos).normalize();
+            const targetDir = targetVec.clone().sub(bonePos).normalize();
+            
+            const angle = effDir.angleTo(targetDir);
+            if (angle > 0.001) {
+              const axis = new Vector3().crossVectors(effDir, targetDir).normalize();
+              const appliedAngle = Math.min(angle, delta * 3); // Damped rotation
+              
+              bone.rotateOnWorldAxis(axis, appliedAngle);
+              
+              // Optional: clamp joint angles here if known bounds exist
+              
+              bone.updateMatrixWorld(true);
+            }
+          }
+        }
+      }
+    } else {
+      // Fallback: move entire scene if absolutely no joints exist
+      const current = scene.position;
+      const diff = targetVec.clone().sub(current);
+      if (diff.length() > 0.01) {
+        scene.position.add(diff.multiplyScalar(Math.min(delta * 2.5, 1)));
+      }
+      const currentRot = scene.rotation.y;
+      const rotDiff = rotationRef.current - currentRot;
+      if (Math.abs(rotDiff) > 0.01) {
+        scene.rotation.y += rotDiff * Math.min(delta * 3, 1);
+      }
     }
   });
 
   return (
-    <group ref={groupRef}>
-      <Model url={robotModelUrl} />
-    </group>
+    <Bounds fit clip observe margin={1.1}>
+      <Center>
+        <primitive object={scene} />
+      </Center>
+    </Bounds>
   );
 }
 
@@ -302,7 +352,7 @@ export default function WorkspaceCanvas({
                   <SimTargetMarker
                     key={`sim-target-${target.id}`}
                     target={target}
-                    isActive={simState?.currentBlockIndex >= 0}
+                    isActive={simState?.currentBlockIndex != null ? simState.currentBlockIndex >= 0 : false}
                   />
                 ))}
 

@@ -25,13 +25,13 @@ export default function InteractiveObject({
   isSelected,
   isNew,
   onSelect,
-  onPositionChange,
+  onPositionChange: _onPositionChange,
 }: InteractiveObjectProps) {
   const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const [pulseScale, setPulseScale] = useState(1);
-  const [showHandles, setShowHandles] = useState(isSelected || isNew);
+  const [_showHandles, setShowHandles] = useState(isSelected || isNew);
 
   const color = objectData.color || '#8B5CF6';
 
@@ -188,7 +188,7 @@ export default function InteractiveObject({
       <Html
         position={[0, (scale.y * pulseScale) + 0.15, 0]}
         center
-        style={{ pointerEvents: 'none', userSelect: 'none' }}
+        style={{ pointerEvents: 'none', userSelect: 'none' as React.CSSProperties["userSelect"] }}
       >
         <div style={{
           backgroundColor: 'rgba(255,255,255,0.95)',

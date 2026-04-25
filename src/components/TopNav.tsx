@@ -2,11 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Share2, ChevronDown, Square, Play, Pause } from 'lucide-react';
 
-interface SimulationRef {
-  running: boolean;
-  timeout: ReturnType<typeof setTimeout> | null;
-}
-
 interface TopNavProps {
   projectName?: string;
   userName?: string;
@@ -23,7 +18,7 @@ interface TopNavProps {
 
 export default function TopNav({
   projectName = 'Untitled',
-  userName = 'User',
+  userName: _userName = 'User',
   userInitial = 'U',
   robotName,
   objectName,
@@ -37,7 +32,6 @@ export default function TopNav({
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(projectName);
   const inputRef = useRef<HTMLInputElement>(null);
-  const simulationRef = useRef<SimulationRef>({ running: false, timeout: null });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -179,11 +173,12 @@ leftSection: {
     display: 'flex',
     alignItems: 'center',
   },
-  centerSection: {
+centerSection: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
+    gap: '8px',
   },
   projectNameBtn: {
     fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
@@ -209,12 +204,6 @@ leftSection: {
     padding: '6px 12px',
     outline: 'none',
     width: '150px',
-  },
-  centerSection: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
   },
   rightSection: {
     display: 'flex',
