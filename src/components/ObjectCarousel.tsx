@@ -2,28 +2,27 @@ import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { robotsData } from '../data/robots.data';
-import RobotCard from './RobotCard';
-import { saveSelectedRobot } from '../utils/robotStorage';
+import { objectsData } from '../data/objects.data';
+import ObjectCard from './ObjectCard';
+import { saveSelectedObject } from '../utils/robotStorage';
 
-export default function RobotCarousel() {
+export default function ObjectCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const navigate = useNavigate();
 
-  // Create an extended array for buffering transitions
-  const extendedRobots = [...robotsData, ...robotsData, ...robotsData];
+  const extendedObjects = [...objectsData, ...objectsData, ...objectsData];
 
-  const handleSelect = useCallback((robot: typeof robotsData[0]) => {
-    saveSelectedRobot(robot);
-    navigate('/select-object', { state: { selectedRobot: robot } });
+  const handleSelect = useCallback((object: typeof objectsData[0]) => {
+    saveSelectedObject(object);
+    navigate('/planner');
   }, [navigate]);
 
   const handleNext = useCallback(() => {
-    setActiveIndex((prev) => (prev + 1) % extendedRobots.length);
+    setActiveIndex((prev) => (prev + 1) % extendedObjects.length);
   }, []);
 
   const handlePrev = useCallback(() => {
-    setActiveIndex((prev) => (prev - 1 + extendedRobots.length) % extendedRobots.length);
+    setActiveIndex((prev) => (prev - 1 + extendedObjects.length) % extendedObjects.length);
   }, []);
 
   useEffect(() => {
@@ -35,7 +34,6 @@ export default function RobotCarousel() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleNext, handlePrev]);
 
-  // Calculate shortest path offset for circular layout
   const getOffset = (index: number, currentActive: number, total: number) => {
     let diff = index - currentActive;
     if (diff > Math.floor(total / 2)) {
@@ -46,28 +44,40 @@ export default function RobotCarousel() {
     return diff;
   };
 
+  if (objectsData.length === 0) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '200px',
+        color: '#888',
+        fontSize: '16px',
+      }}>
+        No objects available. Please try again later.
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', justifyContent: 'center' }}>
-      
-      {/* Container for the cards */}
       <div style={{ position: 'relative', width: '100%', height: '600px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        {extendedRobots.map((robot, i) => {
-          const offset = getOffset(i, activeIndex, extendedRobots.length);
+        {extendedObjects.map((object, i) => {
+          const offset = getOffset(i, activeIndex, extendedObjects.length);
           return (
-            <RobotCard 
-              key={`${robot.id}-${i}`}
-              robot={robot}
+            <ObjectCard 
+              key={`${object.id}-${i}`}
+              object={object}
               isActive={i === activeIndex}
               offset={offset}
-              onSelect={() => handleSelect(robot)}
+              onSelect={() => handleSelect(object)}
             />
           );
         })}
 
-        {/* Navigation Buttons */}
         <button 
           onClick={handlePrev}
-          aria-label="Previous robot"
+          aria-label="Previous object"
           style={{ 
             position: 'absolute', 
             left: '10%', 
@@ -97,7 +107,7 @@ export default function RobotCarousel() {
         </button>
         <button 
           onClick={handleNext}
-          aria-label="Next robot"
+          aria-label="Next object"
           style={{ 
             position: 'absolute', 
             right: '10%', 
@@ -127,22 +137,21 @@ export default function RobotCarousel() {
         </button>
       </div>
 
-      {/* Indicators */}
       <div style={{ 
         width: '100%', 
         display: 'flex', 
         justifyContent: 'center', 
         marginTop: '64px',
-        height: '24px' // stabilize layout
+        height: '24px'
       }}>
         <motion.div 
-          key={activeIndex % robotsData.length}
+          key={activeIndex % objectsData.length}
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
           style={{ fontSize: '16px', fontWeight: 600, color: 'var(--sys-colors-text-text-secondary, #666)', letterSpacing: '2px' }}
         >
-          {(activeIndex % robotsData.length) + 1} / {robotsData.length}
+          {(activeIndex % objectsData.length) + 1} / {objectsData.length}
         </motion.div>
       </div>
     </div>

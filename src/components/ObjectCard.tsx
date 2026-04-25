@@ -1,33 +1,31 @@
 import { motion } from 'framer-motion';
-import type { Robot } from '../data/robots.data';
-import RobotViewer from './RobotViewer';
-import ObjectInScene from './ObjectInScene';
 import type { ObjectData } from '../data/objects.data';
-import { Bot } from 'lucide-react';
+import ObjectViewer from './ObjectViewer';
+import { Box as BoxIcon } from 'lucide-react';
 
-interface RobotCardProps {
-  robot?: Robot;
-  objectData?: ObjectData;
+interface ObjectCardProps {
+  object: ObjectData;
   isActive: boolean;
   offset: number;
   onSelect: () => void;
 }
 
-export default function RobotCard({ robot, objectData, isActive, offset, onSelect }: RobotCardProps) {
+export default function ObjectCard({ object, isActive, offset, onSelect }: ObjectCardProps) {
   const width = isActive ? 400 : 320;
   const height = isActive ? 550 : 450;
-  
+
   const isVisible = Math.abs(offset) <= 1;
-  const x = offset * 280; // Distance between cards
+  const x = offset * 280;
   const scale = isActive ? 1 : 0.8;
   const zIndex = isActive ? 10 : isVisible ? 5 : 0;
   const opacity = isActive ? 1 : isVisible ? 0.6 : 0;
   const blur = isActive ? "blur(0px)" : "blur(6px)";
-  
+
   const yOffset = isActive ? -4 : 4;
-  const shadow = isActive 
-    ? '0 20px 40px rgba(0,0,0,0.08)' 
+  const shadow = isActive
+    ? '0 20px 40px rgba(0,0,0,0.08)'
     : '0 8px 16px rgba(0,0,0,0.04)';
+
   return (
     <motion.div
       initial={false}
@@ -63,7 +61,6 @@ export default function RobotCard({ robot, objectData, isActive, offset, onSelec
         cursor: isActive ? 'pointer' : 'default'
       }}
     >
-      {/* 3D Viewer */}
       <div style={{
         width: '100%',
         height: isActive ? '240px' : '200px',
@@ -74,13 +71,12 @@ export default function RobotCard({ robot, objectData, isActive, offset, onSelec
         marginBottom: '24px'
       }}>
         {isActive ? (
-          robot ? <RobotViewer modelUrl={robot.model} /> : (objectData ? <ObjectInScene objectData={objectData} /> : <Bot size={64} color="#ccc" strokeWidth={1} />)
+          <ObjectViewer objectType={object.id as 'box' | 'cylinder' | 'sphere' | 'pallet'} />
         ) : (
-          <Bot size={64} color="#ccc" strokeWidth={1} />
+          <BoxIcon size={64} color="#ccc" strokeWidth={1} />
         )}
       </div>
 
-      {/* Name */}
       <h3 style={{
         margin: '0 0 12px 0',
         fontSize: '24px',
@@ -88,10 +84,9 @@ export default function RobotCard({ robot, objectData, isActive, offset, onSelec
         textAlign: 'center',
         color: 'var(--sys-colors-text-text-primary, #1a1a1a)'
       }}>
-        {robot?.name || objectData?.name}
+        {object.name}
       </h3>
 
-      {/* Tag */}
       {isActive && (
         <span style={{
           fontSize: '12px',
@@ -103,11 +98,10 @@ export default function RobotCard({ robot, objectData, isActive, offset, onSelec
           display: 'inline-block',
           marginBottom: '20px'
         }}>
-          {robot?.tag || objectData?.tag}
+          {object.tag}
         </span>
       )}
 
-      {/* Description */}
       {isActive && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -129,7 +123,7 @@ export default function RobotCard({ robot, objectData, isActive, offset, onSelec
             color: 'var(--sys-colors-text-text-secondary, #666)',
             width: '100%'
           }}>
-            {robot?.description || objectData?.description}
+            {object.description}
           </p>
           <p style={{
             margin: '0',
@@ -137,7 +131,7 @@ export default function RobotCard({ robot, objectData, isActive, offset, onSelec
             fontWeight: 500,
             color: 'var(--sys-colors-text-text-secondary, #888)'
           }}>
-            {robot?.specs || objectData?.specs}
+            {object.specs}
           </p>
           <div style={{ width: '100%', marginTop: 'auto', paddingTop: '24px', display: 'flex', justifyContent: 'center' }}>
             <span style={{
@@ -148,7 +142,7 @@ export default function RobotCard({ robot, objectData, isActive, offset, onSelec
               fontSize: '15px',
               fontWeight: 600
             }}>
-              {objectData ? 'Select Object' : 'Select Robot'}
+              Select Object
             </span>
           </div>
         </motion.div>

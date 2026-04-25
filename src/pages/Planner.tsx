@@ -2,11 +2,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import type { Robot } from '../data/robots.data';
+import { loadSelectedRobot, saveProjectName } from '../utils/robotStorage';
 
 export default function Planner() {
   const location = useLocation();
   const navigate = useNavigate();
-  const selectedRobot = location.state?.selectedRobot as Robot;
+  const selectedRobot = (location.state?.selectedRobot as Robot) || loadSelectedRobot();
 
   const [projectName, setProjectName] = useState("Untitled");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -26,11 +27,13 @@ export default function Planner() {
         <button
           onClick={() => navigate('/')}
           style={{
-            padding: '10px 20px',
-            backgroundColor: '#1a1a1a',
-            color: 'white',
+            padding: '12px 120px',
+            backgroundColor: '#00376E',
+            color: '#ECF5FE',
             border: 'none',
-            borderRadius: '6px',
+            borderRadius: '12px',
+            fontSize: '15px',
+            fontWeight: 600,
             cursor: 'pointer'
           }}
         >
@@ -119,12 +122,12 @@ export default function Planner() {
 
         <button 
           style={{
-            padding: '12px 32px',
-            backgroundColor: '#003b73', // Matches the dark blue in design
-            color: '#ffffff',
+            padding: '12px 120px',
+            backgroundColor: '#00376E',
+            color: '#ECF5FE',
             border: 'none',
-            borderRadius: '8px',
-            fontSize: '14px',
+            borderRadius: '12px',
+            fontSize: '15px',
             fontWeight: 600,
             cursor: 'pointer',
             transition: 'opacity 0.2s ease'
@@ -132,6 +135,7 @@ export default function Planner() {
           onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
           onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
           onClick={() => {
+            saveProjectName(projectName || 'Untitled');
             navigate('/home');
           }}
         >

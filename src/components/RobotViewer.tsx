@@ -44,8 +44,8 @@ export default function RobotViewer({ modelUrl }: { modelUrl: string }) {
       <ErrorBoundary fallback={<div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff4444', backgroundColor: '#fee' }}>Failed to load 3D model</div>}>
         <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 1.2, 3.5], fov: 50 }}>
           <OrbitControls
-            autoRotate
-            autoRotateSpeed={1}
+            autoRotate={false}
+            autoRotateSpeed={0}
             enableZoom={false}
             enablePan={false}
             makeDefault
