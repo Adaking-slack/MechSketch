@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import type { Robot } from '../data/robots.data';
 import { loadSelectedRobot, saveProjectName } from '../utils/robotStorage';
+import { loadSavedSimulationsForProject, getAllProjectNames, type SavedSimulation } from '../utils/simState';
 
 export default function Planner() {
   const location = useLocation();
@@ -10,15 +11,21 @@ export default function Planner() {
   const selectedRobot = (location.state?.selectedRobot as Robot) || loadSelectedRobot();
 
   const [projectName, setProjectName] = useState("Untitled");
+  const [savedSimulations, setSavedSimulations] = useState<SavedSimulation[]>([]);
+  const [allProjects, setAllProjects] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Auto-select the "Untitled" text on mount
     if (inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
     }
   }, []);
+
+  useEffect(() => {
+    setSavedSimulations(loadSavedSimulationsForProject(projectName));
+    setAllProjects(getAllProjectNames());
+  }, [projectName]);
 
   if (!selectedRobot) {
     return (
@@ -117,8 +124,89 @@ export default function Planner() {
             boxSizing: 'border-box'
           }}
           onFocus={(e) => e.target.style.backgroundColor = '#dedede'}
-          onBlur={(e) => e.target.style.backgroundColor = '#e6e6e6'}
+          onBlur={(e) => {
+            e.target.style.backgroundColor = '#e6e6e6';
+            setSavedSimulations(loadSavedSimulationsForProject(projectName));
+          }}
         />
+
+        <div style={{ width: '380px', marginTop: '32px' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#4a5568', marginBottom: '12px' }}>
+            Saved Work
+          </h3>
+          
+          {savedSimulations.length === 0 ? (
+            <p style={{ fontSize: '13px', color: '#718096', margin: 0 }}>
+              No saved work yet. Start building a simulation and save it to see it here.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {savedSimulations.map(sim => (
+                <div
+                  key={sim.id}
+                  onClick={() => {
+                    saveProjectName(projectName || 'Untitled');
+                    sessionStorage.setItem('mechsketch_load_simulation', JSON.stringify(sim));
+                    sessionStorage.setItem('mechsketch_load_simulation_id', sim.id);
+                    navigate('/home');
+                  }}
+                  style={{
+                    padding: '12px 16px',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.2s ease'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.borderColor = '#cbd5e0'}
+                  onMouseOut={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                >
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: '#2d3748' }}>
+                    {sim.name}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#718096', marginTop: '4px' }}>
+                    {new Date(sim.savedAt).toLocaleString()} · {sim.sequenceBlocks.length} action{sim.sequenceBlocks.length !== 1 ? 's' : ''} · {sim.targets.length} target{sim.targets.length !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {allProjects.length > 0 && (
+          <div style={{ width: '380px', marginTop: '32px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#4a5568', marginBottom: '12px' }}>
+              All Projects
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {allProjects.map(name => (
+                <div
+                  key={name}
+                  onClick={() => setProjectName(name)}
+                  style={{
+                    padding: '12px 16px',
+                    backgroundColor: name === projectName ? '#f0f7ff' : '#ffffff',
+                    border: '1px solid',
+                    borderColor: name === projectName ? '#00376E' : '#e2e8f0',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.2s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    if (name !== projectName) e.currentTarget.style.borderColor = '#cbd5e0';
+                  }}
+                  onMouseOut={(e) => {
+                    if (name !== projectName) e.currentTarget.style.borderColor = '#e2e8f0';
+                  }}
+                >
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: '#2d3748' }}>
+                    {name}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <button 
           style={{

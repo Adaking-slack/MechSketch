@@ -10,7 +10,7 @@ import TargetPropertiesPanel from '../components/TargetPropertiesPanel';
 import InteractiveObject from '../components/InteractiveObject';
 import { type ActionCardData, type SequenceBlock, type BlockType, getBlockParams } from '../data/robots.data';
 import { loadSelectedRobot, loadProjectName, saveProjectName, loadSelectedObject, loadTargets, addTarget, removeTarget, type Target, type TargetType, getTargetColor, loadObjectState, saveObjectState, type PlacedObject, type ObjectState } from '../utils/robotStorage';
-import { initSimState, type SimState } from '../utils/simState';
+import { initSimState, type SimState, saveSimulation, loadSavedSimulations, loadPendingSimulationState, type SavedSimulation } from '../utils/simState';
 import TargetViewer from '../components/TargetViewer';
 
 export default function Home() {
@@ -22,6 +22,10 @@ export default function Home() {
   const [showStartNewModal, setShowStartNewModal] = useState(false);
   const [showNoActionsModal, setShowNoActionsModal] = useState(false);
   const [showNoTargetsModal, setShowNoTargetsModal] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
+  const [saveName, setSaveName] = useState('');
+  const [currentSaveId, setCurrentSaveId] = useState<string | null>(null);
   const [highlightAddTarget, setHighlightAddTarget] = useState(false);
   
   const navigate = useNavigate();
@@ -44,10 +48,24 @@ export default function Home() {
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [simState, setSimState] = useState<SimState | null>(null);
   const [simMessage, setSimMessage] = useState<string | null>(null);
+  const canSave = targets.length > 0 && sequenceBlocks.length > 0;
   const simulationRef = useRef<{ running: boolean; timeout: ReturnType<typeof setTimeout> | null; blockIndex: number }>({ running: false, timeout: null, blockIndex: 0 });
 
   useEffect(() => {
     setTargets(loadTargets());
+  }, []);
+
+  useEffect(() => {
+    const pending = loadPendingSimulationState();
+    if (pending) {
+      setTargets(pending.targets);
+      setSequenceBlocks(pending.sequenceBlocks);
+      const pendingId = sessionStorage.getItem('mechsketch_load_simulation_id');
+      if (pendingId) {
+        setCurrentSaveId(pendingId);
+        sessionStorage.removeItem('mechsketch_load_simulation_id');
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -62,6 +80,12 @@ export default function Home() {
         if (showNoTargetsModal) {
           setShowNoTargetsModal(false);
         }
+        if (showSaveModal) {
+          setShowSaveModal(false);
+        }
+        if (showDeleteProjectModal) {
+          setShowDeleteProjectModal(false);
+        }
       }
       if ((e.key === 'Delete' || e.key === 'Backspace') && sequenceBlocks.length > 0 && !activeBlockId && !editingTargetId) {
         setSequenceBlocks(prev => prev.slice(0, -1));
@@ -69,7 +93,7 @@ export default function Home() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [sequenceBlocks, activeBlockId, editingTargetId, showStartNewModal, showNoActionsModal, showNoTargetsModal]);
+  }, [sequenceBlocks, activeBlockId, editingTargetId, showStartNewModal, showNoActionsModal, showNoTargetsModal, showSaveModal]);
 
   const activeBlock = sequenceBlocks.find(b => b.instanceId === activeBlockId);
   const editingTarget = targets.find(t => t.id === editingTargetId);
@@ -456,6 +480,11 @@ simulationRef.current.blockIndex++;
       simulationRef.current.timeout = setTimeout(runSimulation, delay);
     }
     
+    if (sequenceBlocks.length === 0) {
+      setShowNoActionsModal(true);
+      return;
+    }
+
     if (targets.length === 0) {
       console.log('No targets defined');
       setShowNoTargetsModal(true);
@@ -616,6 +645,7 @@ simulationRef.current.blockIndex++;
     setTargets([]);
     setSelectedTargetId(null);
     setEditingTargetId(null);
+    setCurrentSaveId(null);
 
     const emptyObjectState = { objects: [], selectedObjectId: null, newlyAddedObjectId: null };
     setObjectState(emptyObjectState);
@@ -640,6 +670,14 @@ simulationRef.current.blockIndex++;
     navigate('/auth?view=login');
   }, [navigate]);
 
+  const handleSave = useCallback(() => {
+    setSaveName(currentSaveId 
+      ? (loadSavedSimulations().find(s => s.id === currentSaveId)?.name || `${projectName} - ${new Date().toLocaleString()}`)
+      : `${projectName} - ${new Date().toLocaleString()}`
+    );
+    setShowSaveModal(true);
+  }, [currentSaveId, projectName]);
+
   const handleStartNewCancel = useCallback(() => {
     setShowStartNewModal(false);
   }, []);
@@ -662,6 +700,32 @@ simulationRef.current.blockIndex++;
     setLeftOpen(true);
     setHighlightAddTarget(true);
     setTimeout(() => setHighlightAddTarget(false), 3000);
+  }, []);
+
+  const handleDeleteProjectClick = useCallback(() => {
+    setShowDeleteProjectModal(true);
+  }, []);
+
+  const handleDeleteProjectConfirm = useCallback(() => {
+    const allSims = loadSavedSimulations();
+    const filtered = allSims.filter(s => s.projectName !== projectName);
+    sessionStorage.setItem('mechsketch_saved_simulations', JSON.stringify(filtered));
+    setShowDeleteProjectModal(false);
+    setSequenceBlocks([]);
+    setTargets([]);
+    setCurrentSaveId(null);
+    setSimulationMode(false);
+    setSimulationPaused(false);
+    setSimulationCompleted(false);
+    setSimState(null);
+    const emptyObjectState = { objects: [], selectedObjectId: null, newlyAddedObjectId: null };
+    setObjectState(emptyObjectState);
+    saveObjectState(emptyObjectState);
+    navigate('/planner');
+  }, [projectName, navigate]);
+
+  const handleDeleteProjectCancel = useCallback(() => {
+    setShowDeleteProjectModal(false);
   }, []);
 
   // Automatically add the selected object to the scene if it doesn't match the current one
@@ -757,6 +821,10 @@ simulationRef.current.blockIndex++;
         onStartNew={handleStartNewClick}
         onSettings={handleSettings}
         onLogout={handleLogout}
+        onSave={handleSave}
+        onHome={() => navigate('/planner')}
+        onDeleteProject={handleDeleteProjectClick}
+        canSave={canSave}
         simulationMode={simulationMode}
         simulationPaused={simulationPaused}
         simulationCompleted={simulationCompleted}
@@ -1029,6 +1097,162 @@ simulationRef.current.blockIndex++;
                   cursor: 'pointer',
                 }}>
                 Add Target
+              </button>
+            </div>
+          </div>
+        </div>
+)}
+
+      {showSaveModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }} onClick={() => setShowSaveModal(false)}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '90%',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2)',
+          }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ margin: '0 0 16px 0', fontSize: '20px', fontWeight: 600, color: '#1a1a1a' }}>
+              Save Simulation
+            </h2>
+            <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#555', lineHeight: 1.5 }}>
+              Enter a name for this simulation:
+            </p>
+            <input
+              value={saveName}
+              onChange={e => setSaveName(e.target.value)}
+              placeholder="Enter simulation name"
+              autoFocus
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                border: '1px solid #ddd',
+                fontSize: '15px',
+                color: '#1a1a1a',
+                outline: 'none',
+                marginBottom: '20px',
+                boxSizing: 'border-box',
+              }}
+              onFocus={e => e.target.style.borderColor = '#00376E'}
+              onBlur={e => e.target.style.borderColor = '#ddd'}
+            />
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowSaveModal(false)}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: '1px solid #ddd',
+                  backgroundColor: '#fff',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}>
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const savedSimulation: SavedSimulation = {
+                    id: currentSaveId || `sim-${Date.now()}`,
+                    name: saveName || `${projectName} - ${new Date().toLocaleString()}`,
+                    projectName: projectName,
+                    savedAt: new Date().toISOString(),
+                    targets: targets,
+                    sequenceBlocks: sequenceBlocks,
+                    state: simState || initSimState(objectState.objects, targets),
+                  };
+                  saveSimulation(savedSimulation);
+                  setCurrentSaveId(savedSimulation.id);
+                  setShowSaveModal(false);
+                  setSimMessage('Work saved successfully');
+                  setTimeout(() => setSimMessage(null), 2000);
+                }}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#00376E',
+                  color: '#fff',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}>
+                Save File
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteProjectModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }} onClick={handleDeleteProjectCancel}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '400px',
+            width: '90%',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.2)',
+          }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: 600, color: '#1a1a1a' }}>
+              Delete Project?
+            </h2>
+            <p style={{ margin: '0 0 24px 0', fontSize: '15px', color: '#555', lineHeight: 1.5 }}>
+              This will permanently delete the project "{projectName}" and all saved simulations. This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={handleDeleteProjectCancel}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: '1px solid #ddd',
+                  backgroundColor: '#fff',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}>
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProjectConfirm}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#dc2626',
+                  color: '#fff',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}>
+                Delete Project
               </button>
             </div>
           </div>

@@ -1,4 +1,5 @@
-import type { PlacedObject, Target } from './robotStorage';
+import { type PlacedObject, type Target } from './robotStorage';
+import { type SequenceBlock } from '../data/robots.data';
 
 export interface SimObject {
   id: string;
@@ -29,6 +30,17 @@ export interface SimState {
 }
 
 export const SIM_STORAGE_KEY = 'mechsketch_sim_state';
+export const SAVED_SIMULATIONS_KEY = 'mechsketch_saved_simulations';
+
+export interface SavedSimulation {
+  id: string;
+  name: string;
+  projectName: string;
+  savedAt: string;
+  targets: Target[];
+  sequenceBlocks: SequenceBlock[];
+  state: SimState;
+}
 
 export function initSimState(objects: PlacedObject[], targets: Target[]): SimState {
   const simObjects: SimObject[] = objects.map(o => {
@@ -96,4 +108,63 @@ export function clearSimState(): void {
   } catch (e) {
     console.error('Failed to clear simulation state:', e);
   }
+}
+
+export function saveSimulation(simulation: SavedSimulation): void {
+  try {
+    const existing = loadSavedSimulations();
+    const index = existing.findIndex(s => s.id === simulation.id);
+    if (index >= 0) {
+      existing[index] = simulation;
+    } else {
+      existing.push(simulation);
+    }
+    sessionStorage.setItem(SAVED_SIMULATIONS_KEY, JSON.stringify(existing));
+  } catch (e) {
+    console.error('Failed to save simulation:', e);
+  }
+}
+
+export function loadSavedSimulations(): SavedSimulation[] {
+  try {
+    const data = sessionStorage.getItem(SAVED_SIMULATIONS_KEY);
+    if (data) {
+      return JSON.parse(data) as SavedSimulation[];
+    }
+  } catch (e) {
+    console.error('Failed to load saved simulations:', e);
+  }
+  return [];
+}
+
+export function loadSavedSimulationsForProject(projectName: string): SavedSimulation[] {
+  return loadSavedSimulations().filter(s => s.projectName === projectName);
+}
+
+export function getAllProjectNames(): string[] {
+  const simulations = loadSavedSimulations();
+  const names = new Set(simulations.map(s => s.projectName));
+  return Array.from(names);
+}
+
+export interface SavedSimulationState {
+  targets: Target[];
+  sequenceBlocks: SequenceBlock[];
+}
+
+export function loadPendingSimulationState(): SavedSimulationState | null {
+  try {
+    const data = sessionStorage.getItem('mechsketch_load_simulation');
+    if (data) {
+      const sim = JSON.parse(data) as SavedSimulation;
+      sessionStorage.removeItem('mechsketch_load_simulation');
+      return {
+        targets: sim.targets,
+        sequenceBlocks: sim.sequenceBlocks,
+      };
+    }
+  } catch (e) {
+    console.error('Failed to load pending simulation state:', e);
+  }
+  return null;
 }

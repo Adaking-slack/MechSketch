@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Share2, ChevronDown, Square, Play, Pause, RotateCcw, Settings, LogOut } from 'lucide-react';
+import { Share2, ChevronDown, ChevronUp, Square, Play, Pause, RotateCcw, Settings, LogOut, Save, Home } from 'lucide-react';
 
 interface TopNavProps {
   projectName?: string;
@@ -13,11 +13,15 @@ interface TopNavProps {
   onShare?: () => void;
   onStop?: () => void;
   onStartNew?: () => void;
+  onSave?: () => void;
+  onHome?: () => void;
+  onDeleteProject?: () => void;
   onSettings?: () => void;
   onLogout?: () => void;
   simulationMode?: boolean;
   simulationPaused?: boolean;
   simulationCompleted?: boolean;
+  canSave?: boolean;
 }
 
 export default function TopNav({
@@ -31,16 +35,22 @@ export default function TopNav({
   onShare,
   onStop,
   onStartNew,
+  onSave,
+  onHome,
+  onDeleteProject,
   onSettings,
   onLogout,
   simulationMode = false,
   simulationPaused = false,
   simulationCompleted = false,
+  canSave = false,
 }: TopNavProps) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(projectName);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showFileMenu, setShowFileMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const fileMenuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -56,14 +66,17 @@ export default function TopNav({
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setShowUserMenu(false);
       }
+      if (fileMenuRef.current && !fileMenuRef.current.contains(e.target as Node)) {
+        setShowFileMenu(false);
+      }
     };
-    if (showUserMenu) {
+    if (showUserMenu || showFileMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showUserMenu]);
+  }, [showUserMenu, showFileMenu]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -95,8 +108,46 @@ export default function TopNav({
   return (
     <nav style={styles.nav}>
       <div style={styles.container}>
-        {/* Left: Project Name */}
+        {/* Left: File Menu + Project Name */}
         <div style={styles.leftSection}>
+          {(onHome || onDeleteProject) && (
+            <div ref={fileMenuRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowFileMenu(!showFileMenu)}
+                style={styles.fileBtn}
+              >
+                File
+                {showFileMenu ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+              {showFileMenu && (
+                <div style={styles.dropdownMenu}>
+                  {onHome && (
+                    <button
+                      onClick={() => {
+                        onHome();
+                        setShowFileMenu(false);
+                      }}
+                      style={styles.fileDropdownItem}
+                    >
+                      <Home size={14} />
+                      Home
+                    </button>
+                  )}
+                  {onDeleteProject && (
+                    <button
+                      onClick={() => {
+                        onDeleteProject();
+                        setShowFileMenu(false);
+                      }}
+                      style={{ ...styles.dropdownItem, color: '#dc2626' }}
+                    >
+                      Delete Project
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           {editing ? (
             <input
               ref={inputRef}
@@ -136,7 +187,7 @@ export default function TopNav({
           )}
         </div>
 
-        {/* Right: Simulate, Share, User */}
+        {/* Right: Simulate, Save, Share, User */}
         <div style={styles.rightSection}>
           {simulationMode && (
             <button
@@ -147,6 +198,16 @@ export default function TopNav({
             >
               <Square size={12} />
               Stop
+            </button>
+          )}
+
+          {(canSave || simulationMode) && onSave && (
+            <button
+              onClick={onSave}
+              style={styles.saveBtn}
+            >
+              <Save size={12} style={{ marginRight: '4px' }} />
+              Save
             </button>
           )}
 
@@ -247,8 +308,63 @@ const styles: Record<string, React.CSSProperties> = {
 leftSection: {
     display: 'flex',
     alignItems: 'center',
+    gap: '8px',
   },
-centerSection: {
+  fileBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '6px 10px',
+    borderRadius: '6px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: '#4a5568',
+    fontSize: '14px',
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    marginTop: '4px',
+    backgroundColor: '#ffffff',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+    border: '1px solid #e2e8f0',
+    minWidth: '160px',
+    zIndex: 100,
+    overflow: 'hidden',
+  },
+  fileDropdownItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    width: '100%',
+    padding: '10px 14px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: '#374049',
+    fontSize: '14px',
+    textAlign: 'left',
+    cursor: 'pointer',
+    transition: 'background-color 0.15s',
+  },
+  homeBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '28px',
+    height: '28px',
+    borderRadius: '6px',
+    border: 'none',
+    backgroundColor: 'transparent',
+    color: '#4a5568',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+  },
+  centerSection: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -434,5 +550,21 @@ centerSection: {
     cursor: 'pointer',
     textAlign: 'left',
     transition: 'background-color 0.15s',
+  },
+  saveBtn: {
+    backgroundColor: '#10B981',
+    color: '#FFFFFF',
+    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    fontSize: '13px',
+    lineHeight: '18px',
+    fontWeight: 500,
+    border: 'none',
+    borderRadius: '6px',
+    padding: '8px 16px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    transition: 'opacity 0.15s',
   },
 };
