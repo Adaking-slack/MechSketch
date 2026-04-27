@@ -1,4 +1,4 @@
-import { ChevronLeft } from 'lucide-react';
+import { X, Plus, Minus, ChevronsUpDown } from 'lucide-react';
 import type { BlockType, BlockParams } from '../data/robots.data';
 import type { Target } from '../utils/robotStorage';
 import * as Icons from 'lucide-react';
@@ -38,7 +38,7 @@ export default function PropertiesPanel({
 
     if (!hasTargets) {
       return (
-        <div style={{ padding: '16px', backgroundColor: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: '8px', textAlign: 'center' }}>
+        <div style={{ padding: '16px', backgroundColor: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: '8px', textAlign: 'center', marginBottom: '16px' }}>
           <div style={{ fontSize: '13px', fontWeight: 500, color: '#92400E', marginBottom: '4px' }}>
             No targets available
           </div>
@@ -50,8 +50,7 @@ export default function PropertiesPanel({
     }
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div style={{ fontSize: '12px', color: '#666', fontWeight: 500 }}>Select Target</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
         {targets.map((target) => (
           <button
             key={target.id}
@@ -62,21 +61,19 @@ export default function PropertiesPanel({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '12px',
               padding: '10px 12px',
-              backgroundColor: params.targetId === target.id ? '#E8F0F8' : '#F8F9FA',
-              border: `1px solid ${params.targetId === target.id ? '#0B3A6E' : '#EAEAEA'}`,
-              borderRadius: '6px',
+              backgroundColor: '#F6F7F9',
+              border: `1px solid ${params.targetId === target.id ? '#00376E' : '#EAEAEA'}`,
+              borderRadius: '8px',
               cursor: 'pointer',
               textAlign: 'left',
+              transition: 'border-color 0.15s',
             }}
           >
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: target.color }} />
+            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: target.color }} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '13px', fontWeight: 500, color: '#374049' }}>{target.name}</div>
-              <div style={{ fontSize: '11px', color: '#888' }}>
-                X:{target.position.x} Y:{target.position.y} Z:{target.position.z}
-              </div>
             </div>
           </button>
         ))}
@@ -91,22 +88,22 @@ export default function PropertiesPanel({
       case 'inspect':
         return (
           <>
-            <ParamField label="X" value={params.x ?? 0} onChange={(v) => handleChange('x', v)} />
-            <ParamField label="Y" value={params.y ?? 0} onChange={(v) => handleChange('y', v)} />
-            <ParamField label="Z" value={params.z ?? 0} onChange={(v) => handleChange('z', v)} />
+            <ParamField label="X" value={params.x ?? 0} onChange={(v) => handleChange('x', v)} step={0.05} labelWidth="20px" />
+            <ParamField label="Y" value={params.y ?? 0} onChange={(v) => handleChange('y', v)} step={0.05} labelWidth="20px" />
+            <ParamField label="Z" value={params.z ?? 0} onChange={(v) => handleChange('z', v)} step={0.05} labelWidth="20px" />
           </>
         );
       case 'place':
         return renderPlaceFields();
       case 'wait':
         return (
-          <ParamField label="Duration (s)" value={params.duration ?? 1} onChange={(v) => handleChange('duration', v)} />
+          <ParamField label="Duration" value={params.duration ?? 1} onChange={(v) => handleChange('duration', v)} step={0.5} />
         );
       case 'rotate':
         return (
           <>
-            <ParamField label="Angle (°)" value={params.angle ?? 90} onChange={(v) => handleChange('angle', v)} />
-            <AxisField value={params.axis ?? 'Z'} onChange={(v) => handleChange('axis', v)} />
+            <ParamField label="Angle" value={params.angle ?? 90} onChange={(v) => handleChange('angle', v)} step={15} labelWidth="40px" />
+            <AxisField value={params.axis ?? 'Z'} onChange={(v) => handleChange('axis', v)} labelWidth="40px" />
           </>
         );
       default:
@@ -115,66 +112,34 @@ export default function PropertiesPanel({
   };
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '0 24px' }}>
-      <button
-        onClick={onBack}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          background: 'none',
-          border: 'none',
-          padding: '8px 0',
-          cursor: 'pointer',
-          color: '#4a5568',
-          fontSize: '14px',
-          marginBottom: '16px',
-        }}
-      >
-        <ChevronLeft size={16} />
-        Back to Sequence
-      </button>
-
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        padding: '12px 16px',
-        backgroundColor: '#F6F7F9',
-        border: '1px solid #EAEAEA',
-        borderRadius: '8px',
-        marginBottom: '20px',
-      }}>
-        <div style={{
-          width: '32px',
-          height: '32px',
-          borderRadius: '6px',
-          backgroundColor: '#374049',
-          color: '#fff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <IconComponent size={18} />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#FFFFFF', borderRadius: '16px 16px 0 0' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 2px', borderBottom: '1px solid #EAEAEA' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#001529' }}>
+            <IconComponent size={20} />
+          </div>
+          <h2 style={{ margin: 0, fontSize: '18px', lineHeight: '25px', letterSpacing: '-1px', color: '#001529', fontWeight: 600 }}>
+            {label}
+          </h2>
         </div>
-        <span style={{ fontSize: '14px', fontWeight: 500, color: '#374049' }}>
-          {label}
-        </span>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex' }}>
+          <X size={20} color="#001529" />
+        </button>
       </div>
 
-      <div style={{
-        fontSize: '12px',
-        fontWeight: 600,
-        color: '#888',
-        textTransform: 'uppercase',
-        letterSpacing: '0.05em',
-        marginBottom: '12px',
-      }}>
-        Parameters
+      <div style={{ padding: '20px 0px', flex: 1, overflowY: 'auto' }}>
+        {/* Parameters Section */}
+        <div>
+          <h3 style={{ fontSize: '14px', lineHeight: '18px', color: '#4C4D4E', fontWeight: 500, margin: '0 0 16px 0' }}>Parameters</h3>
+          {renderFields()}
+        </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {renderFields()}
+      <div style={{ padding: '2px', backgroundColor: '#FFFFFF', borderTop: '1px solid #EAEAEA' }}>
+        <button onClick={onBack} style={{ width: '100%', backgroundColor: '#00376E', color: '#ECF5FE', padding: '10px 0', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}>
+          Done
+        </button>
       </div>
     </div>
   );
@@ -184,26 +149,34 @@ interface ParamFieldProps {
   label: string;
   value: number;
   onChange: (value: number) => void;
+  step?: number;
+  labelWidth?: string;
 }
 
-function ParamField({ label, value, onChange }: ParamFieldProps) {
+function ParamField({ label, value, onChange, step = 1, labelWidth = '60px' }: ParamFieldProps) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-      <label style={{ fontSize: '12px', color: '#666' }}>{label}</label>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        style={{
-          padding: '8px 12px',
-          border: '1px solid #e2e8f0',
-          borderRadius: '6px',
-          fontSize: '14px',
-          outline: 'none',
-        }}
-        onFocus={(e) => { e.currentTarget.style.borderColor = '#0B3A6E'; }}
-        onBlur={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
-      />
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+      <span style={{ fontSize: '13px', lineHeight: '18px', color: '#374049', width: labelWidth }}>{label}</span>
+      
+      <button onClick={() => onChange(value + step)} style={{ backgroundColor: '#F6F7F9', padding: '6px 8px', borderRadius: '8px', border: '1px solid #EAEAEA', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Plus size={20} color="#374049" />
+      </button>
+
+      <div style={{ flex: 1, position: 'relative' }}>
+        <input
+          type="number"
+          value={Number(value).toString()}
+          onChange={(e) => onChange(Number(e.target.value))}
+          style={{ width: '100%', padding: '8px 12px', boxSizing: 'border-box', border: '1px solid #EAEAEA', borderRadius: '8px', fontSize: '13px', lineHeight: '18px', color: '#374049', outline: 'none' }}
+        />
+        <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+          <ChevronsUpDown size={16} color="#374049" />
+        </div>
+      </div>
+
+      <button onClick={() => onChange(value - step)} style={{ backgroundColor: '#F6F7F9', padding: '6px 8px', borderRadius: '8px', border: '1px solid #EAEAEA', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Minus size={20} color="#374049" />
+      </button>
     </div>
   );
 }
@@ -211,14 +184,15 @@ function ParamField({ label, value, onChange }: ParamFieldProps) {
 interface AxisFieldProps {
   value: 'X' | 'Y' | 'Z';
   onChange: (value: 'X' | 'Y' | 'Z') => void;
+  labelWidth?: string;
 }
 
-function AxisField({ value, onChange }: AxisFieldProps) {
+function AxisField({ value, onChange, labelWidth = '60px' }: AxisFieldProps) {
   const axes: ('X' | 'Y' | 'Z')[] = ['X', 'Y', 'Z'];
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-      <label style={{ fontSize: '12px', color: '#666' }}>Axis</label>
-      <div style={{ display: 'flex', gap: '8px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+      <span style={{ fontSize: '13px', lineHeight: '18px', color: '#374049', width: labelWidth }}>Axis</span>
+      <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
         {axes.map((axis) => (
           <button
             key={axis}
@@ -226,11 +200,11 @@ function AxisField({ value, onChange }: AxisFieldProps) {
             style={{
               flex: 1,
               padding: '8px 12px',
-              border: `1px solid ${value === axis ? '#0B3A6E' : '#e2e8f0'}`,
-              borderRadius: '6px',
-              backgroundColor: value === axis ? '#0B3A6E' : '#fff',
-              color: value === axis ? '#fff' : '#374049',
-              fontSize: '14px',
+              border: `1px solid ${value === axis ? '#00376E' : '#EAEAEA'}`,
+              borderRadius: '8px',
+              backgroundColor: value === axis ? '#00376E' : '#F6F7F9',
+              color: value === axis ? '#ECF5FE' : '#374049',
+              fontSize: '13px',
               fontWeight: 500,
               cursor: 'pointer',
               transition: 'all 0.15s',

@@ -13,6 +13,7 @@ interface LeftPanelProps {
   onAddTarget?: (type: TargetType) => void;
   onDeleteTarget?: (id: string) => void;
   highlightAddTarget?: boolean;
+  onDismissHighlight?: () => void;
 }
 
 

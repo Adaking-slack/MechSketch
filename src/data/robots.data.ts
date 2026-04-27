@@ -237,5 +237,30 @@ export const robotsData: Robot[] = [
       'action-place': 'place',
       'action-wait': 'wait',
     }
+  },
+  {
+    id: "robotik-arm",
+    name: "Robotik Arm",
+    description: "Versatile 6-axis robotic arm suitable for a wide range of industrial applications.",
+    capabilities: ["Assembly", "Handling", "Pick & Place"],
+    specs: "6 DOF • Up to 10kg • General Purpose",
+    model: "/Models/Robotik-arm.glb",
+    tag: "Versatile Industrial Arm",
+    primaryActions: [
+      { id: 'action-pick', label: 'Pick', icon: 'Grab', theme: themePick },
+      { id: 'action-place', label: 'Place', icon: 'Box', theme: themePlace },
+    ],
+    secondaryActions: [
+      { id: 'action-move', label: 'Move', icon: 'Move', theme: themeMove },
+      { id: 'action-rotate', label: 'Rotate', icon: 'RotateCw', theme: themeRotate },
+      { id: 'action-wait', label: 'Wait', icon: 'Clock', theme: themeWait },
+    ],
+    actionMap: {
+      'action-pick': 'pick',
+      'action-place': 'place',
+      'action-move': 'move',
+      'action-rotate': 'rotate',
+      'action-wait': 'wait',
+    }
   }
 ];

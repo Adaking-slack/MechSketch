@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { robotsData } from '../data/robots.data';
@@ -9,14 +9,20 @@ import { saveSelectedRobot } from '../utils/robotStorage';
 export default function RobotCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Create an extended array for buffering transitions
   const extendedRobots = [...robotsData, ...robotsData, ...robotsData];
 
   const handleSelect = useCallback((robot: typeof robotsData[0]) => {
     saveSelectedRobot(robot);
-    navigate('/select-object', { state: { selectedRobot: robot } });
-  }, [navigate]);
+    navigate('/select-object', { 
+      state: { 
+        selectedRobot: robot,
+        flowType: location.state?.flowType
+      } 
+    });
+  }, [navigate, location.state?.flowType]);
 
   const handleNext = useCallback(() => {
     setActiveIndex((prev) => (prev + 1) % extendedRobots.length);

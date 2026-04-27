@@ -3,33 +3,28 @@ import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import type { Robot } from '../data/robots.data';
 import { loadSelectedRobot, saveProjectName } from '../utils/robotStorage';
-import { loadSavedSimulationsForProject, getAllProjectNames, type SavedSimulation } from '../utils/simState';
+import { loadSavedSimulations, type SavedSimulation } from '../utils/simState';
+
 
 export default function Planner() {
   const location = useLocation();
   const navigate = useNavigate();
   const selectedRobot = (location.state?.selectedRobot as Robot) || loadSelectedRobot();
 
-  const [projectName, setProjectName] = useState("Untitled");
+  const [projectName, setProjectName] = useState("");
   const [savedSimulations, setSavedSimulations] = useState<SavedSimulation[]>([]);
-  const [allProjects, setAllProjects] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus();
-      inputRef.current.select();
     }
+    setSavedSimulations(loadSavedSimulations());
   }, []);
-
-  useEffect(() => {
-    setSavedSimulations(loadSavedSimulationsForProject(projectName));
-    setAllProjects(getAllProjectNames());
-  }, [projectName]);
 
   if (!selectedRobot) {
     return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f5f5' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f7f8f9' }}>
         <p style={{ marginBottom: '16px' }}>No robot selected for planning.</p>
         <button
           onClick={() => navigate('/')}
@@ -57,178 +52,169 @@ export default function Planner() {
       backgroundColor: '#f7f8f9',
       position: 'relative',
       fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-      overflow: 'hidden'
+      overflowY: 'auto',
+      overflowX: 'hidden'
     }}>
       {/* Back Button */}
-      <button 
+      <button
         onClick={() => navigate('/select-robot')}
         style={{
           position: 'absolute',
-          top: '48px',
-          left: '48px',
+          top: '24px',
+          left: '32px',
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
           background: 'none',
           border: 'none',
-          fontSize: '15px',
-          fontWeight: 600,
-          color: '#1a1a1a',
           cursor: 'pointer',
-          padding: 0
+          fontSize: '13px',
+          lineHeight: '18px',
+          color: '#374049',
+          padding: 0,
+          zIndex: 10
         }}
         onMouseOver={(e) => e.currentTarget.style.opacity = '0.7'}
         onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
       >
-        <ArrowLeft size={20} strokeWidth={2.5} />
+        <ArrowLeft size={16} />
         Back
       </button>
 
-      {/* Center Form Content */}
+      {/* Main Container */}
       <div style={{
-        height: '100%',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        minHeight: '100%',
+        paddingTop: '15vh',
         display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center'
+        flexDirection: 'column'
       }}>
-        <h2 style={{
+
+        {/* Top Centered Section */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
           width: '380px',
-          textAlign: 'left',
-          fontSize: '20px',
-          fontWeight: 700,
-          color: '#2d3748',
-          margin: '0 0 16px 0',
-          letterSpacing: '-0.3px'
+          margin: '0 auto'
         }}>
-          Input Project name
-        </h2>
-
-        <input
-          ref={inputRef}
-          value={projectName}
-          onChange={(e) => setProjectName(e.target.value)}
-          placeholder="Untitled"
-          style={{
-            width: '380px',
-            padding: '16px 20px',
-            backgroundColor: '#e6e6e6', // Matches the light grey input in design
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '15px',
-            fontWeight: 500,
+          <h2 style={{
+            fontSize: '14px',
+            fontWeight: 600,
             color: '#1a1a1a',
-            outline: 'none',
-            marginBottom: '24px',
-            transition: 'background-color 0.2s ease',
-            boxSizing: 'border-box'
-          }}
-          onFocus={(e) => e.target.style.backgroundColor = '#dedede'}
-          onBlur={(e) => {
-            e.target.style.backgroundColor = '#e6e6e6';
-            setSavedSimulations(loadSavedSimulationsForProject(projectName));
-          }}
-        />
+            margin: '0 0 12px 0'
+          }}>
+            Input your project name
+          </h2>
 
-        <div style={{ width: '380px', marginTop: '32px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#4a5568', marginBottom: '12px' }}>
-            Saved Work
+          <input
+            ref={inputRef}
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            style={{
+              width: '100%',
+              height: '46px',
+              padding: '0 16px',
+              backgroundColor: '#ffffff',
+              border: '1px solid #e2e8f0',
+              borderRadius: '6px',
+              fontSize: '15px',
+              fontWeight: 500,
+              color: '#1a1a1a',
+              outline: 'none',
+              boxSizing: 'border-box'
+            }}
+          />
+
+          <button
+            style={{
+              width: '100%',
+              height: '46px',
+              marginTop: '24px',
+              backgroundColor: '#00376E',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'opacity 0.2s ease'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+            onClick={() => {
+              saveProjectName(projectName || 'Untitled');
+              navigate('/home');
+            }}
+          >
+            Continue
+          </button>
+        </div>
+
+        {/* Recently Saved Section */}
+        <div style={{
+          marginTop: '100px',
+          paddingLeft: '32px',
+          width: '100%',
+          boxSizing: 'border-box'
+        }}>
+          <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a', margin: '0 0 20px 0', letterSpacing: '-0.3px' }}>
+            Recently saved
           </h3>
-          
-          {savedSimulations.length === 0 ? (
-            <p style={{ fontSize: '13px', color: '#718096', margin: 0 }}>
-              No saved work yet. Start building a simulation and save it to see it here.
-            </p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {savedSimulations.map(sim => (
-                <div
-                  key={sim.id}
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 260px)', gap: '24px 24px', paddingBottom: '20px', maxWidth: '1112px' }}>
+            {savedSimulations.length > 0 ? (
+              savedSimulations.map(sim => (
+                <div 
+                  key={sim.id} 
+                  style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease',
+                  }}
                   onClick={() => {
                     saveProjectName(projectName || 'Untitled');
                     sessionStorage.setItem('mechsketch_load_simulation', JSON.stringify(sim));
                     sessionStorage.setItem('mechsketch_load_simulation_id', sim.id);
                     navigate('/home');
                   }}
-                  style={{
-                    padding: '12px 16px',
-                    backgroundColor: '#ffffff',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    transition: 'border-color 0.2s ease'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.borderColor = '#cbd5e0'}
-                  onMouseOut={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                  onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                  onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                  <div style={{ fontSize: '14px', fontWeight: 500, color: '#2d3748' }}>
+                  <div
+                    style={{
+                      width: '260px',
+                      height: '260px',
+                      backgroundColor: '#ffffff',
+                      borderRadius: '12px',
+                      position: 'relative',
+                      overflow: 'hidden',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.04)'
+                    }}
+                  >
+                    <div style={{ pointerEvents: 'none', width: '100%', height: '100%', backgroundColor: '#f0f4f8' }}>
+                      <img
+                        src={sim.thumbnail || "https://placehold.co/260x260/e2e8f0/a0aec0?text=No+Thumbnail"}
+                        alt={`${sim.name} thumbnail`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#1a1a1a', marginTop: '16px', letterSpacing: '-0.2px', fontWeight: 500 }}>
                     {sim.name}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#718096', marginTop: '4px' }}>
-                    {new Date(sim.savedAt).toLocaleString()} · {sim.sequenceBlocks.length} action{sim.sequenceBlocks.length !== 1 ? 's' : ''} · {sim.targets.length} target{sim.targets.length !== 1 ? 's' : ''}
-                  </div>
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            ) : (
+              <div style={{ fontSize: '14px', color: '#718096' }}>
+                No recently saved project
+              </div>
+            )}
+          </div>
         </div>
 
-        {allProjects.length > 0 && (
-          <div style={{ width: '380px', marginTop: '32px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#4a5568', marginBottom: '12px' }}>
-              All Projects
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {allProjects.map(name => (
-                <div
-                  key={name}
-                  onClick={() => setProjectName(name)}
-                  style={{
-                    padding: '12px 16px',
-                    backgroundColor: name === projectName ? '#f0f7ff' : '#ffffff',
-                    border: '1px solid',
-                    borderColor: name === projectName ? '#00376E' : '#e2e8f0',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    transition: 'border-color 0.2s ease'
-                  }}
-                  onMouseOver={(e) => {
-                    if (name !== projectName) e.currentTarget.style.borderColor = '#cbd5e0';
-                  }}
-                  onMouseOut={(e) => {
-                    if (name !== projectName) e.currentTarget.style.borderColor = '#e2e8f0';
-                  }}
-                >
-                  <div style={{ fontSize: '14px', fontWeight: 500, color: '#2d3748' }}>
-                    {name}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <button 
-          style={{
-            padding: '12px 120px',
-            backgroundColor: '#00376E',
-            color: '#ECF5FE',
-            border: 'none',
-            borderRadius: '12px',
-            fontSize: '15px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'opacity 0.2s ease'
-          }}
-          onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-          onClick={() => {
-            saveProjectName(projectName || 'Untitled');
-            navigate('/home');
-          }}
-        >
-          Continue
-        </button>
       </div>
     </div>
   );
