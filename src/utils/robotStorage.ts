@@ -223,3 +223,11 @@ export function clearSelectedRobot(): void {
     console.error('Failed to clear robot selection:', e);
   }
 }
+
+export function clearSelectedObject(): void {
+  try {
+    sessionStorage.removeItem(OBJECT_KEY);
+  } catch (e) {
+    console.error('Failed to clear object selection:', e);
+  }
+}

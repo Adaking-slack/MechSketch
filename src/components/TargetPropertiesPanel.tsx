@@ -1,4 +1,4 @@
-import { ChevronLeft, Minus, Plus } from 'lucide-react';
+import { X, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Redo, Undo, Plus, Minus, ChevronsUpDown } from 'lucide-react';
 import type { Target, TargetSize } from '../utils/robotStorage';
 import { updateTarget } from '../utils/robotStorage';
 
@@ -8,72 +8,81 @@ interface TargetPropertiesPanelProps {
   onTargetUpdate: (target: Target) => void;
 }
 
-interface NumberInputProps {
-  label: string;
+interface PositionControlProps {
+  label1: string;
+  icon1: React.ReactNode;
+  onClick1: () => void;
+
   value: number;
-  onChange: (value: number) => void;
-  step?: number;
+  onChange: (val: number) => void;
+
+  label2: string;
+  icon2: React.ReactNode;
+  onClick2: () => void;
 }
 
-function NumberInput({ label, value, onChange, step = 0.05 }: NumberInputProps) {
+function PositionControl({ label1, icon1, onClick1, value, onChange, label2, icon2, onClick2 }: PositionControlProps) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-      <label style={{ fontSize: '11px', color: '#888' }}>{label}</label>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <button
-          onClick={() => onChange(value - step)}
-          style={{
-            width: '28px',
-            height: '28px',
-            border: '1px solid #e2e8f0',
-            borderRadius: '4px 0 0 4px',
-            backgroundColor: '#f8f9fa',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#4a5568',
-          }}
-        >
-          <Minus size={12} />
-        </button>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
+      <button onClick={onClick1} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+        <div style={{ backgroundColor: '#F6F7F9', padding: '6px 8px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {icon1}
+        </div>
+        <span style={{ fontSize: '10px', lineHeight: '16px', color: '#656768', marginTop: '4px' }}>{label1}</span>
+      </button>
+
+      <div style={{ flex: 1, position: 'relative' }}>
         <input
           type="number"
-          step={step}
-          value={value}
+          value={Number(value).toString()} // Avoid trailing zeros
           onChange={(e) => onChange(Number(e.target.value))}
-          style={{
-            flex: 1,
-            padding: '6px 8px',
-            border: '1px solid #e2e8f0',
-            borderRadius: '0',
-            fontSize: '13px',
-            outline: 'none',
-            textAlign: 'center',
-            minWidth: 0,
-          }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = '#0B3A6E'; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; }}
+          style={{ width: '100%', padding: '8px 12px', boxSizing: 'border-box', border: '1px solid #EAEAEA', borderRadius: '8px', fontSize: '13px', lineHeight: '18px', color: '#374049', outline: 'none' }}
         />
-        <button
-          onClick={() => onChange(value + step)}
-          style={{
-            width: '28px',
-            height: '28px',
-            border: '1px solid #e2e8f0',
-            borderRadius: '0 4px 4px 0',
-            borderLeft: 'none',
-            backgroundColor: '#f8f9fa',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#4a5568',
-          }}
-        >
-          <Plus size={12} />
-        </button>
+        <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+          <ChevronsUpDown size={16} color="#374049" />
+        </div>
       </div>
+
+      <button onClick={onClick2} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+        <div style={{ backgroundColor: '#F6F7F9', padding: '6px 8px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {icon2}
+        </div>
+        <span style={{ fontSize: '10px', lineHeight: '16px', color: '#656768', marginTop: '4px' }}>{label2}</span>
+      </button>
+    </div>
+  );
+}
+
+interface SizeControlProps {
+  label: string;
+  value: number;
+  onChange: (val: number) => void;
+}
+
+function SizeControl({ label, value, onChange }: SizeControlProps) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+      <span style={{ fontSize: '13px', lineHeight: '18px', color: '#374049', width: '40px' }}>{label}</span>
+
+      <button onClick={() => onChange(value + 0.05)} style={{ backgroundColor: '#F6F7F9', padding: '6px 8px', borderRadius: '8px', border: '1px solid #EAEAEA', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Plus size={20} color="#374049" />
+      </button>
+
+      <div style={{ flex: 1, position: 'relative' }}>
+        <input
+          type="number"
+          value={Number(value).toString()}
+          onChange={(e) => onChange(Number(e.target.value))}
+          style={{ width: '100%', padding: '8px 12px', boxSizing: 'border-box', border: '1px solid #EAEAEA', borderRadius: '8px', fontSize: '13px', lineHeight: '18px', color: '#374049', outline: 'none' }}
+        />
+        <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+          <ChevronsUpDown size={16} color="#374049" />
+        </div>
+      </div>
+
+      <button onClick={() => onChange(Math.max(0.05, value - 0.05))} style={{ backgroundColor: '#F6F7F9', padding: '6px 8px', borderRadius: '8px', border: '1px solid #EAEAEA', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Minus size={20} color="#374049" />
+      </button>
     </div>
   );
 }
@@ -83,6 +92,7 @@ export default function TargetPropertiesPanel({
   onBack,
   onTargetUpdate,
 }: TargetPropertiesPanelProps) {
+
   const handlePositionChange = (axis: 'x' | 'y' | 'z', value: number) => {
     const updated = {
       ...target,
@@ -105,127 +115,95 @@ export default function TargetPropertiesPanel({
   };
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <button
-        onClick={onBack}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          background: 'none',
-          border: 'none',
-          padding: '8px 0',
-          cursor: 'pointer',
-          color: '#4a5568',
-          fontSize: '14px',
-        }}
-      >
-        <ChevronLeft size={16} />
-        Back to Sequence
-      </button>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#FFFFFF', borderRadius: '12px 12px 0 0' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 2px', borderBottom: '1px solid #EAEAEA' }}>
+        <h2 style={{ margin: 0, fontSize: '18px', lineHeight: '25px', letterSpacing: '-1px', color: '#001529', fontWeight: 600 }}>
+          {target.type === 'point' ? 'Target point' : 'Target zone'}
+        </h2>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex' }}>
+          <X size={20} color="#001529" />
+        </button>
+      </div>
 
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        padding: '12px 16px',
-        backgroundColor: '#F6F7F9',
-        border: '1px solid #EAEAEA',
-        borderRadius: '8px',
-        marginBottom: '16px',
-      }}>
-        <div style={{
-          width: '24px',
-          height: '24px',
-          borderRadius: '4px',
-          backgroundColor: target.color,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          {target.type === 'point' ? (
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'white' }} />
-          ) : (
-            <div style={{ width: '12px', height: '8px', border: '2px solid white', borderRadius: '1px' }} />
-          )}
+      <div style={{ padding: '20px 0px', flex: 1, overflowY: 'auto' }}>
+        {/* Name Section */}
+        <div style={{ marginBottom: '24px' }}>
+          <label style={{ display: 'block', fontSize: '13px', lineHeight: '18px', color: '#656768', marginBottom: '8px' }}>Name</label>
+          <input
+            type="text"
+            value={target.name}
+            onChange={(e) => {
+              const updated = { ...target, name: e.target.value };
+              updateTarget(target.id, updated);
+              onTargetUpdate(updated);
+            }}
+            style={{ width: '100%', padding: '10px 12px', boxSizing: 'border-box', backgroundColor: '#F6F7F9', border: 'none', borderRadius: '8px', fontSize: '13px', color: '#374049', outline: 'none' }}
+          />
         </div>
-        <span style={{ fontSize: '14px', fontWeight: 500, color: '#374049' }}>
-          {target.type === 'point' ? 'Target Point' : 'Target Zone'}
-        </span>
-      </div>
 
-      <div style={{ fontSize: '11px', fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-        Name
-      </div>
-      <input
-        type="text"
-        value={target.name}
-        onChange={(e) => {
-          const updated = { ...target, name: e.target.value };
-          updateTarget(target.id, updated);
-          onTargetUpdate(updated);
-        }}
-        style={{
-          padding: '8px 12px',
-          border: '1px solid #e2e8f0',
-          borderRadius: '6px',
-          fontSize: '14px',
-          outline: 'none',
-          marginBottom: '16px',
-          width: '100%',
-        }}
-      />
+        {/* Position Section */}
+        <div style={{ marginBottom: '24px' }}>
+          <h3 style={{ fontSize: '14px', lineHeight: '18px', color: '#4C4D4E', fontWeight: 500, margin: '0 0 16px 0' }}>Position</h3>
 
-      <div style={{ fontSize: '11px', fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-        Position
-      </div>
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-        <NumberInput label="X (Left/Right)" value={target.position.x} onChange={(v) => handlePositionChange('x', v)} step={0.05} />
-        <NumberInput label="Y (Up/Down)" value={target.position.y} onChange={(v) => handlePositionChange('y', v)} step={0.05} />
-        <NumberInput label="Z (Fwd/Back)" value={target.position.z} onChange={(v) => handlePositionChange('z', v)} step={0.05} />
-      </div>
+          <PositionControl
+            label1="Left"
+            icon1={<ArrowLeft size={20} color="#374049" />}
+            onClick1={() => handlePositionChange('x', target.position.x - 0.05)}
+            value={target.position.x}
+            onChange={(val) => handlePositionChange('x', val)}
+            label2="right"
+            icon2={<ArrowRight size={20} color="#374049" />}
+            onClick2={() => handlePositionChange('x', target.position.x + 0.05)}
+          />
 
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <button
-          onClick={() => handlePositionChange('x', target.position.x - 0.05)}
-          style={{ flex: 1, padding: '8px', border: '1px solid #e2e8f0', borderRadius: '4px', backgroundColor: '#f8f9fa', fontSize: '11px', color: '#666', cursor: 'pointer' }}
-        >
-          ←X
-        </button>
-        <button
-          onClick={() => handlePositionChange('x', target.position.x + 0.05)}
-          style={{ flex: 1, padding: '8px', border: '1px solid #e2e8f0', borderRadius: '4px', backgroundColor: '#f8f9fa', fontSize: '11px', color: '#666', cursor: 'pointer' }}
-        >
-          X→
-        </button>
-        <button
-          onClick={() => handlePositionChange('z', target.position.z - 0.05)}
-          style={{ flex: 1, padding: '8px', border: '1px solid #e2e8f0', borderRadius: '4px', backgroundColor: '#f8f9fa', fontSize: '11px', color: '#666', cursor: 'pointer' }}
-        >
-          ←Z
-        </button>
-        <button
-          onClick={() => handlePositionChange('z', target.position.z + 0.05)}
-          style={{ flex: 1, padding: '8px', border: '1px solid #e2e8f0', borderRadius: '4px', backgroundColor: '#f8f9fa', fontSize: '11px', color: '#666', cursor: 'pointer' }}
-        >
-          Z→
-        </button>
-      </div>
+          <PositionControl
+            label1="Up"
+            icon1={<ArrowUp size={20} color="#374049" />}
+            onClick1={() => handlePositionChange('y', target.position.y + 0.05)}
+            value={target.position.y}
+            onChange={(val) => handlePositionChange('y', val)}
+            label2="down"
+            icon2={<ArrowDown size={20} color="#374049" />}
+            onClick2={() => handlePositionChange('y', target.position.y - 0.05)}
+          />
 
-      {target.type === 'zone' && (
-        <>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', marginTop: '16px' }}>
-            Size
+          <PositionControl
+            label1="fwd"
+            icon1={<Redo size={20} color="#374049" />}
+            onClick1={() => handlePositionChange('z', target.position.z - 0.05)}
+            value={target.position.z}
+            onChange={(val) => handlePositionChange('z', val)}
+            label2="bwd"
+            icon2={<Undo size={20} color="#374049" />}
+            onClick2={() => handlePositionChange('z', target.position.z + 0.05)}
+          />
+        </div>
+
+        {/* Size Section */}
+        {target.type === 'zone' && (
+          <div>
+            <h3 style={{ fontSize: '14px', lineHeight: '18px', color: '#4C4D4E', fontWeight: 500, margin: '0 0 16px 0' }}>Size</h3>
+
+            <SizeControl
+              label="Width"
+              value={target.size?.width ?? 0.2}
+              onChange={(val) => handleSizeChange('width', val)}
+            />
+
+            <SizeControl
+              label="Depth"
+              value={target.size?.depth ?? 0.2}
+              onChange={(val) => handleSizeChange('depth', val)}
+            />
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <NumberInput label="Width" value={target.size?.width ?? 0.2} onChange={(v) => handleSizeChange('width', v)} step={0.01} />
-            <NumberInput label="Depth" value={target.size?.depth ?? 0.2} onChange={(v) => handleSizeChange('depth', v)} step={0.01} />
-          </div>
-        </>
-      )}
+        )}
+      </div>
 
-      <div style={{ marginTop: 'auto', padding: '12px', backgroundColor: '#f0f4f8', borderRadius: '6px', fontSize: '11px', color: '#666' }}>
-        <strong>Quick Move:</strong> Use arrow buttons or +/- to move the target in the workspace. Changes update in real-time.
+      <div style={{ padding: '2px', backgroundColor: '#FFFFFF' }}>
+        <button onClick={onBack} style={{ width: '100%', backgroundColor: '#00376E', color: '#ECF5FE', padding: '10px 0', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}>
+          Done
+        </button>
       </div>
     </div>
   );

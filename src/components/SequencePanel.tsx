@@ -2,6 +2,22 @@ import { useState } from 'react';
 import { X, ChevronRight } from 'lucide-react';
 import type { SequenceBlock, BlockType } from '../data/robots.data';
 import { getBlockSummary } from '../data/robots.data';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import * as Icons from 'lucide-react';
 
 interface SequencePanelProps {
@@ -14,90 +30,111 @@ interface SequencePanelProps {
 
 interface SequenceBlockItemProps {
   block: SequenceBlock;
-  index: number;
   isActive: boolean;
   onSelect: () => void;
   onDelete: () => void;
 }
 
-function SequenceBlockItem({ block, isActive, onSelect, onDelete }: SequenceBlockItemProps) {
+function SortableBlockItem({ block, isActive, onSelect, onDelete }: SequenceBlockItemProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: block.instanceId });
+
+  const style = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   const IconComponent = (Icons as any)[block.icon] || Icons.Circle;
 
   return (
     <div
-      onClick={onSelect}
+      ref={setNodeRef}
+      style={style}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        padding: '10px 14px',
-        backgroundColor: isActive ? '#E8F0F8' : '#F8F9FA',
-        border: `1px solid ${isActive ? '#0B3A6E' : '#EAEAEA'}`,
-        borderRadius: '8px',
-        cursor: 'pointer',
-        transition: 'all 0.15s',
-        userSelect: 'none',
-        width: '100%',
-        boxSizing: 'border-box',
-      }}
+      onClick={onSelect}
+      {...attributes}
+      {...listeners}
+      className="sortable-block-item"
     >
-      <div style={{
-        width: '28px',
-        height: '28px',
-        borderRadius: '5px',
-        backgroundColor: block.theme.iconBgColor,
-        color: block.theme.iconColor,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-        <IconComponent size={15} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontSize: '13px',
-          fontWeight: 500,
-          color: block.theme.textColor,
-          marginBottom: '2px',
-        }}>
-          {block.label}
-        </div>
-        <div style={{
-          fontSize: '11px',
-          color: '#888',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}>
-          {getBlockSummary(block.type as BlockType, block.params)}
-        </div>
-      </div>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
+      <div
         style={{
-          background: 'none',
-          border: 'none',
-          padding: '4px',
-          cursor: 'pointer',
-          color: '#aaa',
-          opacity: isHovered ? 1 : 0,
-          transition: 'opacity 0.2s',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 14px',
+          backgroundColor: isActive ? '#E8F0F8' : '#F8F9FA',
+          border: `1px solid ${isActive ? '#0B3A6E' : '#EAEAEA'}`,
+          borderRadius: '8px',
+          cursor: 'grab',
+          transition: 'all 0.15s',
+          userSelect: 'none',
+          width: '100%',
+          boxSizing: 'border-box',
+        }}
+      >
+        <div style={{
+          width: '28px',
+          height: '28px',
+          borderRadius: '5px',
+          backgroundColor: block.theme.iconBgColor,
+          color: block.theme.iconColor,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-        }}
-        title="Remove"
-      >
-        <X size={14} />
-      </button>
+          flexShrink: 0,
+        }}>
+          <IconComponent size={15} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontSize: '13px',
+            fontWeight: 500,
+            color: block.theme.textColor,
+            marginBottom: '2px',
+          }}>
+            {block.label}
+          </div>
+          <div style={{
+            fontSize: '11px',
+            color: '#888',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {getBlockSummary(block.type as BlockType, block.params)}
+          </div>
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: '4px',
+            cursor: 'pointer',
+            color: '#aaa',
+            opacity: isHovered ? 1 : 0,
+            transition: 'opacity 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          title="Remove"
+        >
+          <X size={14} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -107,7 +144,31 @@ export default function SequencePanel({
   activeBlockId,
   onBlockSelect,
   onBlockDelete,
+  onBlockReorder,
 }: SequencePanelProps) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = blocks.findIndex((b) => b.instanceId === active.id);
+      const newIndex = blocks.findIndex((b) => b.instanceId === over.id);
+
+      const newBlocks = arrayMove(blocks, oldIndex, newIndex);
+      onBlockReorder(newBlocks);
+    }
+  };
+
   return (
     <div style={{
       height: '100%',
@@ -163,22 +224,32 @@ export default function SequencePanel({
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
-            {blocks.map((block, index) => (
-              <div key={block.instanceId} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-                <SequenceBlockItem
-                  block={block}
-                  index={index}
-                  isActive={activeBlockId === block.instanceId}
-                  onSelect={() => onBlockSelect(block.instanceId)}
-                  onDelete={() => onBlockDelete(block.instanceId)}
-                />
-                {index < blocks.length - 1 && (
-                  <ChevronRight size={16} color="#ddd" style={{ flexShrink: 0 }} />
-                )}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={blocks.map(b => b.instanceId)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', boxSizing: 'border-box', overflowY: 'auto' }}>
+                {blocks.map((block, index) => (
+                  <div key={block.instanceId} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+                    <SortableBlockItem
+                      block={block}
+                      isActive={activeBlockId === block.instanceId}
+                      onSelect={() => onBlockSelect(block.instanceId)}
+                      onDelete={() => onBlockDelete(block.instanceId)}
+                    />
+                    {index < blocks.length - 1 && (
+                      <ChevronRight size={16} color="#ddd" style={{ flexShrink: 0 }} />
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </SortableContext>
+          </DndContext>
         )}
       </div>
     </div>

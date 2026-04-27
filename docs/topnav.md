@@ -1,7 +1,7 @@
 # Top Navigation
 
 ## Overview
-The top navigation provides access to core actions (Simulate, Share) and displays the current project name. It also includes user identity and quick interaction controls.
+The top navigation provides access to core actions (Simulate) and displays the current project name. It also includes user identity and quick interaction controls.
 
 ---
 
@@ -16,107 +16,138 @@ The top navigation provides access to core actions (Simulate, Share) and display
 
 ---
 
-## Left Section
-
-### Project Name (Editable)
-
-- **Content:** Project name (e.g., "Zeera")
-- **Editable:** Yes (inline editing enabled)
-
-#### Typography
-- **Font Size:** 18px
-- **Line Height:** 25px
-- **Letter Spacing:** -1
-- **Color:** #374049
-- **Font Weight:** Medium (recommended for clarity)
-
----
-
-## Right Section
 
 ### Layout
-- Elements aligned horizontally (right-aligned)
-- **Spacing between Share and Name:** 10px
-- Consistent vertical alignment (centered)
+- Full-width horizontal container
+- Background color: #FFFFFF
+- Display: Flex
+- Align items: Center
+- Justify content: Space-between
+- Vertical alignment: Center
 
 ---
 
-## Simulate Button
+## 🔹 Left Section (File Menu)
 
-### Container
-- **Background Color:** #00376E
-- **Border Radius:** (define if needed, e.g., 6px–8px)
-- **Padding:** (define if needed)
-
-### Text
-- **Label:** Simulate
-- **Font Size:** 13px
-- **Line Height:** 18px
-- **Letter Spacing:** 0
-- **Color:** #EEF5FE
-- **Font Weight:** Medium (recommended for CTA emphasis)
+### File Text
+- Text: **File**
+- Font size: 15px
+- Line height: 23px
+- Letter spacing: 0
+- Font weight: 500 (Medium)
+- Color: #374049
 
 ---
 
-## Share Button
-
-### Container
-- **Background Color:** #FEF7F9
-- **Border Radius:** (define if needed)
-- **Padding:** (define if needed)
-
-### Text
-- **Label:** Share
-- **Font Size:** 13px
-- **Line Height:** 18px
-- **Letter Spacing:** 0
-- **Font Weight:** Regular
-- **Color:** #374049 (assumed, confirm if different)
-
-### Icon
-- **Type:** Share icon
-- **Size:** 16px
-- **Color:** (inherit or define if needed)
+### Dropdown Icon
+- Type: Chevron down
+- Size: 24px
+- Color: #374049
+- Position: Right of "File"
+- Spacing: 4–8px from text
 
 ---
 
-## User Identity (Avatar + Name)
+## 🔹 Center Section (Project Name)
 
-### Avatar
-- **Shape:** Circle
-- **Background Color:** #00578A
-- **Text:** Initial (e.g., "E")
-
-### Typography
-- **Font Size:** 13px
-- **Line Height:** 18px
-- **Font Weight:** Medium
-- **Color:** #EDFESE
+### Project Name Container
+- Background color: #F6F7F9
+- Padding: (auto or ~8–12px horizontal depending on layout)
+- Border radius: (optional: 6–8px for soft UI)
 
 ---
 
-## Dropdown Arrow Icon
-
-- **Position:** Next to avatar
-- **Size:** 22px
-- **Color:** #002925
-
----
-
-## Spacing Rules
-
-- **Between Share and Avatar:** 10px
-- Maintain consistent spacing between all right-side elements
-- Align all elements vertically center
+### Project Name Text
+- Text: *Name of project* (editable)
+- Font size: 15px
+- Line height: 23px
+- Letter spacing: 0
+- Font weight: 600
+- Color: #374049
+- Alignment: Centered
 
 ---
 
-## Notes
+## 🔹 Right Section (Actions & Profile)
 
-- ❌ No Settings button (explicitly removed)
-- Ensure:
-  - Editable project name supports focus and typing states
-  - Buttons have hover and active states (to be defined)
-  - Accessibility (contrast, clickable areas ≥ 44px height)
+### Simulate Button
+- Text: Simulate
+- Background color: #00376E
+
+#### Padding
+- Left/Right: 8px
+- Top/Bottom: 6px
+
+#### Typography
+- Font size: 13px
+- Line height: 18px
+- Font weight: 600
+- Letter spacing: 0
+- Text color: #ECF5FE
+
+---
+
+### Selected Robot/Object Indicator
+
+- Background color: #EDFCFC
+- Text: *Name of robot/object*
+
+#### Typography
+- Font size: 13px
+- Line height: 18px
+- Font weight: 600
+- Letter spacing: 0
+- Text color: #00857A
+
+---
+
+### Profile Avatar
+
+#### Container
+- Shape: Circle
+- Background color: #000000
+- Size: (commonly 32–40px, define in implementation)
+
+#### Text (Initial)
+- Example: **E**
+- Font size: 18px
+- Line height: 18px
+- Font weight: 300 (Thin)
+- Letter spacing: 0
+- Color: #FFFFFF
+- Alignment: Centered
+
+---
+
+### Profile Dropdown Icon
+- Type: Chevron down
+- Size: 24px
+- Color: #000000
+- Position: Right of avatar
+- Spacing: 6–10px
+
+---
+
+## 🔸 Spacing System
+
+- Gap between right section elements:
+  - Simulate → Robot/Object: 12–16px
+  - Robot/Object → Profile: 12–16px
+  - Profile → Dropdown: 6–10px
+
+---
+
+## 🧱 Notes for Implementation
+
+- Ensure clear visual grouping:
+  - Left = Navigation
+  - Center = Context (Project)
+  - Right = Actions + Identity
+- Maintain consistent vertical alignment across all elements
+- Use hover states for:
+  - File menu
+  - Buttons
+  - Profile dropdown
+- Ensure truncation/ellipsis for long project names
 
 ---

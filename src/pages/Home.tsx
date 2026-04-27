@@ -27,6 +27,7 @@ export default function Home() {
   const [saveName, setSaveName] = useState('');
   const [currentSaveId, setCurrentSaveId] = useState<string | null>(null);
   const [highlightAddTarget, setHighlightAddTarget] = useState(false);
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const navigate = useNavigate();
   
@@ -699,7 +700,21 @@ simulationRef.current.blockIndex++;
     setShowNoTargetsModal(false);
     setLeftOpen(true);
     setHighlightAddTarget(true);
-    setTimeout(() => setHighlightAddTarget(false), 3000);
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+    }
+    highlightTimeoutRef.current = setTimeout(() => {
+      setHighlightAddTarget(false);
+      highlightTimeoutRef.current = null;
+    }, 4000);
+  }, []);
+
+  const handleDismissHighlight = useCallback(() => {
+    setHighlightAddTarget(false);
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+      highlightTimeoutRef.current = null;
+    }
   }, []);
 
   const handleDeleteProjectClick = useCallback(() => {
@@ -790,9 +805,16 @@ simulationRef.current.blockIndex++;
 }, [objectState]);
 
   const handleShare = useCallback(() => {
+    let sanitizedRobot = null;
+    if (selectedRobot) {
+      // Omit all available system actions to ensure export only contains the user's arranged sequence
+      const { primaryActions, secondaryActions, actionMap, ...robotDetails } = selectedRobot;
+      sanitizedRobot = robotDetails;
+    }
+
     const exportData = {
       projectName,
-      robot: selectedRobot,
+      robot: sanitizedRobot,
       object: selectedObject,
       targets: targets,
       sequenceBlocks: sequenceBlocks,
@@ -816,7 +838,8 @@ simulationRef.current.blockIndex++;
         projectName={projectName}
         onProjectNameChange={handleProjectNameChange}
         onSimulate={handleSimulate}
-        onShare={handleShare}
+        onExport={handleShare}
+        hasSequence={sequenceBlocks.length > 0}
         onStop={handleStopSimulate}
         onStartNew={handleStartNewClick}
         onSettings={handleSettings}
@@ -835,7 +858,7 @@ simulationRef.current.blockIndex++;
       <div style={{ display: 'flex', flex: 1, position: 'relative', overflow: 'hidden' }}>
         <aside style={{ width: simulationMode && !simulationCompleted ? 0 : (leftOpen ? '280px' : '0px'), height: '100%', backgroundColor: '#ffffff', borderRight: leftOpen && !(simulationMode && !simulationCompleted) ? '1px solid #e2e8f0' : 'none', boxShadow: leftOpen && !(simulationMode && !simulationCompleted) ? '4px 0 16px rgba(0,0,0,0.02)' : 'none', zIndex: 10, transition: 'all 0.3s', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {!(simulationMode && !simulationCompleted) && <div style={{ width: '280px', padding: '24px', boxSizing: 'border-box', height: '100%', overflow: 'hidden' }}>
-            <LeftPanel robot={selectedRobot} onActionClick={handleAddAction} targets={targets} selectedTargetId={selectedTargetId} onTargetSelect={handleTargetSelectFromCanvas} onAddTarget={handleAddTarget} onDeleteTarget={handleDeleteTarget} highlightAddTarget={highlightAddTarget} />
+            <LeftPanel robot={selectedRobot} onActionClick={handleAddAction} targets={targets} selectedTargetId={selectedTargetId} onTargetSelect={handleTargetSelectFromCanvas} onAddTarget={handleAddTarget} onDeleteTarget={handleDeleteTarget} highlightAddTarget={highlightAddTarget} onDismissHighlight={handleDismissHighlight} />
           </div>}
         </aside>
 
@@ -1166,6 +1189,16 @@ simulationRef.current.blockIndex++;
               </button>
               <button
                 onClick={() => {
+                  let thumbnailDataUrl = '';
+                  const canvas = document.querySelector('canvas');
+                  if (canvas) {
+                    try {
+                      thumbnailDataUrl = canvas.toDataURL('image/webp', 0.5);
+                    } catch(e) {
+                      console.error("Failed to capture thumbnail", e);
+                    }
+                  }
+
                   const savedSimulation: SavedSimulation = {
                     id: currentSaveId || `sim-${Date.now()}`,
                     name: saveName || `${projectName} - ${new Date().toLocaleString()}`,
@@ -1174,6 +1207,11 @@ simulationRef.current.blockIndex++;
                     targets: targets,
                     sequenceBlocks: sequenceBlocks,
                     state: simState || initSimState(objectState.objects, targets),
+                    robotId: selectedRobot?.id,
+                    robotModelUrl: selectedRobot?.model,
+                    thumbnail: thumbnailDataUrl,
+                    createdAt: currentSaveId ? undefined : new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
                   };
                   saveSimulation(savedSimulation);
                   setCurrentSaveId(savedSimulation.id);

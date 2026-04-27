@@ -264,7 +264,7 @@ export default function WorkspaceCanvas({
   return (
     <div style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, zIndex: 0 }}>
       <ErrorBoundary fallback={<div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff4444', backgroundColor: '#fee' }}>Failed to load 3D model</div>}>
-        <Canvas shadows dpr={[1, 2]} camera={{ position: [0, 1.2, 3.5], fov: 50 }}>
+        <Canvas gl={{ preserveDrawingBuffer: true }} shadows dpr={[1, 2]} camera={{ position: [0, 1.2, 3.5], fov: 50 }}>
           <OrbitControls
             enableZoom={!simulationMode}
             enablePan={!simulationMode}

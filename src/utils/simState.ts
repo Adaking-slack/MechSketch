@@ -40,6 +40,11 @@ export interface SavedSimulation {
   targets: Target[];
   sequenceBlocks: SequenceBlock[];
   state: SimState;
+  robotId?: string;
+  robotModelUrl?: string;
+  thumbnail?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export function initSimState(objects: PlacedObject[], targets: Target[]): SimState {
