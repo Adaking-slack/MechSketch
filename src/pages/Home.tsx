@@ -653,8 +653,8 @@ simulationRef.current.blockIndex++;
   }, []);
 
   const handleSettings = useCallback(() => {
-    console.log('Settings clicked');
-  }, []);
+    navigate('/settings');
+  }, [navigate]);
 
   const handleLogout = useCallback(() => {
     console.log('Logging out');
