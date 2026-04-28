@@ -59,6 +59,8 @@ export default function InteractiveObject({
     y: scale.y * pulseScale,
     z: scale.z * pulseScale,
   };
+  const labelOffsetX = Math.max(currentScale.x, currentScale.z) * 0.7 + 0.08;
+  const labelOffsetY = Math.max(currentScale.y * 0.65, 0.14);
 
   const renderGeometry = () => {
     switch (objectData.id) {
@@ -185,25 +187,30 @@ export default function InteractiveObject({
       )}
 
       {/* Label */}
-      <Html
-        position={[0, (scale.y * pulseScale) + 0.15, 0]}
-        center
-        style={{ pointerEvents: 'none', userSelect: 'none' as React.CSSProperties["userSelect"] }}
-      >
-        <div style={{
-          backgroundColor: 'rgba(255,255,255,0.95)',
-          padding: '4px 10px',
-          borderRadius: '4px',
-          fontSize: '11px',
-          fontWeight: 600,
-          color: color,
-          whiteSpace: 'nowrap',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          border: isSelected ? `2px solid ${HIGHLIGHT_COLOR}` : `1px solid #e2e8f0`,
-        }}>
-          {objectData.name}
-        </div>
-      </Html>
+      {(isSelected || hovered || isNew) && (
+        <Html
+          position={[labelOffsetX, labelOffsetY, 0]}
+          center
+          transform
+          occlude
+          distanceFactor={8}
+          style={{ pointerEvents: 'none', userSelect: 'none' as React.CSSProperties['userSelect'] }}
+        >
+          <div style={{
+            backgroundColor: 'rgba(255,255,255,0.82)',
+            padding: '3px 8px',
+            borderRadius: '4px',
+            fontSize: '10px',
+            fontWeight: 600,
+            color: color,
+            whiteSpace: 'nowrap',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+            border: isSelected ? `2px solid ${HIGHLIGHT_COLOR}` : `1px solid #e2e8f0`,
+          }}>
+            {objectData.name}
+          </div>
+        </Html>
+      )}
     </group>
   );
 }

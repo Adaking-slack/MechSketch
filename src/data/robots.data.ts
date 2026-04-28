@@ -128,7 +128,18 @@ export function getBlockParams(type: BlockType): BlockParams {
   return { ...defaultParams[type] };
 }
 
-export function getBlockSummary(type: BlockType, params: BlockParams): string {
+export function getBlockSummary(
+  type: BlockType,
+  params: BlockParams,
+  targetLookup?: (id: string) => { name: string } | undefined
+): string {
+  if (params.targetId && targetLookup) {
+    const t = targetLookup(params.targetId);
+    if (t) {
+      const verb = type === 'place' ? '→' : type === 'pick' ? 'from' : type === 'move' ? 'to' : '@';
+      return `${verb} ${t.name}`;
+    }
+  }
   switch (type) {
     case 'pick':
       return `X:${params.x ?? 0} Y:${params.y ?? 0} Z:${params.z ?? 0}`;

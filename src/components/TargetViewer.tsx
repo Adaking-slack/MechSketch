@@ -27,6 +27,8 @@ function TargetPoint({ target, isSelected, onClick, isNew }: TargetPointProps) {
   const baseSize = 0.06;
   const scaledSize = baseSize * pulseScale;
   const markerColor = target.color || HIGHLIGHT_COLOR;
+  const labelOffsetX = scaledSize * 2.2 + 0.08;
+  const labelOffsetY = 0.22;
 
   return (
     <group ref={groupRef} position={[target.position.x, target.position.y, target.position.z]}>
@@ -99,19 +101,22 @@ function TargetPoint({ target, isSelected, onClick, isNew }: TargetPointProps) {
       
       {/* Label - always visible */}
       <Html
-        position={[0, 0.55, 0]}
+        position={[labelOffsetX, labelOffsetY, 0]}
         center
+        transform
+        occlude
+        distanceFactor={8}
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <div style={{
-          backgroundColor: 'rgba(255,255,255,0.95)',
-          padding: '6px 12px',
+          backgroundColor: 'rgba(255,255,255,0.82)',
+          padding: '4px 10px',
           borderRadius: '6px',
-          fontSize: '13px',
+          fontSize: '11px',
           fontWeight: 700,
           color: markerColor,
           whiteSpace: 'nowrap',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.14)',
           border: isSelected ? `2px solid ${markerColor}` : `1px solid ${markerColor}`,
           minWidth: 'fit-content',
         }}>
@@ -143,6 +148,8 @@ function TargetZone({ target, isSelected, onClick, isNew }: TargetZoneProps) {
   const scaledWidth = size.width * pulseScale;
   const scaledDepth = size.depth * pulseScale;
   const markerColor = target.color || HIGHLIGHT_COLOR;
+  const labelOffsetX = scaledWidth / 2 + 0.12;
+  const labelOffsetY = tableHeight + 0.04;
 
   const tableColor = '#9B7E5C';
   const edgeColor = '#7A5F45';
@@ -246,19 +253,22 @@ function TargetZone({ target, isSelected, onClick, isNew }: TargetZoneProps) {
       
       {/* Label - always visible */}
       <Html
-        position={[0, tableHeight + 0.12, 0]}
+        position={[labelOffsetX, labelOffsetY, 0]}
         center
+        transform
+        occlude
+        distanceFactor={8}
         style={{ pointerEvents: 'none', userSelect: 'none' }}
       >
         <div style={{
-          backgroundColor: 'rgba(255,255,255,0.95)',
-          padding: '6px 12px',
+          backgroundColor: 'rgba(255,255,255,0.82)',
+          padding: '4px 10px',
           borderRadius: '6px',
-          fontSize: '13px',
+          fontSize: '11px',
           fontWeight: 700,
           color: markerColor,
           whiteSpace: 'nowrap',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.14)',
           border: isSelected ? `2px solid ${markerColor}` : `1px solid ${markerColor}`,
           minWidth: 'fit-content',
         }}>

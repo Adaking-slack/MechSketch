@@ -27,6 +27,8 @@ export interface SimState {
   isPlaying: boolean;
   message: string | null;
   executionState: ExecutionState;
+  // World-space target for the gripper end-effector — drives IK on rigged arms.
+  gripperGoal?: SimPosition;
 }
 
 export const SIM_STORAGE_KEY = 'mechsketch_sim_state';
