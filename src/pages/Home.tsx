@@ -7,10 +7,11 @@ import WorkspaceCanvas from '../components/WorkspaceCanvas';
 import SequencePanel from '../components/SequencePanel';
 import PropertiesPanel from '../components/PropertiesPanel';
 import TargetPropertiesPanel from '../components/TargetPropertiesPanel';
+import ObjectPropertiesPanel from '../components/ObjectPropertiesPanel';
 import InteractiveObject from '../components/InteractiveObject';
 import { type ActionCardData, type SequenceBlock, type BlockType, getBlockParams } from '../data/robots.data';
 import { loadSelectedRobot, loadProjectName, saveProjectName, loadSelectedObject, loadTargets, addTarget, removeTarget, type Target, type TargetType, getTargetColor, loadObjectState, saveObjectState, type PlacedObject, type ObjectState } from '../utils/robotStorage';
-import { initSimState, type SimState, saveSimulation, loadSavedSimulations, loadPendingSimulationState, type SavedSimulation } from '../utils/simState';
+import { initSimState, type SimState, type SimObject, saveSimulation, loadSavedSimulations, loadPendingSimulationState, type SavedSimulation } from '../utils/simState';
 import TargetViewer from '../components/TargetViewer';
 
 export default function Home() {
@@ -39,22 +40,127 @@ export default function Home() {
   const [newlyAddedTargetId, setNewlyAddedTargetId] = useState<string | null>(null);
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const [editingTargetId, setEditingTargetId] = useState<string | null>(null);
+  const [editingObjectId, setEditingObjectId] = useState<string | null>(null);
   
   // Object state for interactive objects in the scene
   const [objectState, setObjectState] = useState<ObjectState>(() => loadObjectState() || { objects: [], selectedObjectId: null, newlyAddedObjectId: null });
+  const latestObjectStateRef = useRef<ObjectState>(loadObjectState() || { objects: [], selectedObjectId: null, newlyAddedObjectId: null });
   const [newlyAddedObjectId, setNewlyAddedObjectId] = useState<string | null>(null);
   const hasInitializedRef = useRef(false);
   
   const [sequenceBlocks, setSequenceBlocks] = useState<SequenceBlock[]>([]);
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [simState, setSimState] = useState<SimState | null>(null);
+  const latestSimStateRef = useRef<SimState | null>(null);
   const [simMessage, setSimMessage] = useState<string | null>(null);
   const canSave = targets.length > 0 && sequenceBlocks.length > 0;
-  const simulationRef = useRef<{ running: boolean; timeout: ReturnType<typeof setTimeout> | null; blockIndex: number }>({ running: false, timeout: null, blockIndex: 0 });
+  const simulationRef = useRef<{ running: boolean; timeout: ReturnType<typeof setTimeout> | null; blockIndex: number; phaseTimeouts: ReturnType<typeof setTimeout>[] }>({ running: false, timeout: null, blockIndex: 0, phaseTimeouts: [] });
+  const pendingPickObjectIdRef = useRef<string | null>(null);
+  const pendingPlacementRef = useRef<{ objectId: string; position: { x: number; y: number; z: number }; targetId: string | null } | null>(null);
+  // Time the arm gets to reach a goal before grip/release commits.
+  const APPROACH_MS = 2200;
+  const POST_ACTION_MS = 700; // small tail after grip/release before next block
+
+  useEffect(() => {
+    latestSimStateRef.current = simState;
+  }, [simState]);
+
+  useEffect(() => {
+    latestObjectStateRef.current = objectState;
+  }, [objectState]);
+
+  const resolveHeldObject = useCallback((state: SimState): SimObject | null => {
+    if (state.heldObject) return state.heldObject;
+    const byState = state.objects.find(o => o.state === 'held' || o.currentHolderId === 'robot');
+    if (byState) return byState;
+    if (pendingPickObjectIdRef.current) {
+      return state.objects.find(o => o.id === pendingPickObjectIdRef.current) ?? null;
+    }
+    return null;
+  }, []);
+
+  const setSimStateTracked = useCallback((updater: (prev: SimState | null) => SimState | null) => {
+    setSimState(prev => {
+      const next = updater(prev);
+      latestSimStateRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const persistPlacedObject = useCallback((objectId: string, position: { x: number; y: number; z: number }) => {
+    setObjectState(prev => {
+      const next = {
+        ...prev,
+        objects: prev.objects.map(o => o.id === objectId ? { ...o, position: { ...position } } : o),
+      };
+      latestObjectStateRef.current = next;
+      saveObjectState(next);
+      return next;
+    });
+  }, []);
+
+  const commitSimObjectsToObjectState = useCallback((finalState: SimState) => {
+    setObjectState(prev => {
+      const next = {
+        ...prev,
+        objects: prev.objects.map(existingObj => {
+          const simObj = finalState.objects.find(so => so.id === existingObj.id);
+          if (!simObj) return existingObj;
+          return { ...existingObj, position: simObj.position };
+        }),
+      };
+      latestObjectStateRef.current = next;
+      saveObjectState(next);
+      return next;
+    });
+  }, []);
+
+  const flushPendingPlacement = useCallback((state: SimState | null): SimState | null => {
+    if (!state) return state;
+    const pending = pendingPlacementRef.current;
+    if (!pending) return state;
+
+    const nextState: SimState = {
+      ...state,
+      objects: state.objects.map(o =>
+        o.id === pending.objectId
+          ? { ...o, position: { ...pending.position }, targetId: pending.targetId, state: 'placed', currentHolderId: null }
+          : o
+      ),
+      heldObject: state.heldObject?.id === pending.objectId ? null : state.heldObject,
+    };
+
+    persistPlacedObject(pending.objectId, pending.position);
+    pendingPlacementRef.current = null;
+    pendingPickObjectIdRef.current = null;
+    latestSimStateRef.current = nextState;
+    return nextState;
+  }, [persistPlacedObject]);
 
   useEffect(() => {
     setTargets(loadTargets());
   }, []);
+
+  // Keep block snapshot coords in sync when their bound target's position changes.
+  useEffect(() => {
+    setSequenceBlocks(prev => {
+      let changed = false;
+      const next = prev.map(b => {
+        if (!b.params?.targetId) return b;
+        const t = targets.find(tt => tt.id === b.params!.targetId);
+        if (!t) return b;
+        const isPlace = b.type === 'place';
+        const xKey = isPlace ? 'targetX' : 'x';
+        const yKey = isPlace ? 'targetY' : 'y';
+        const zKey = isPlace ? 'targetZ' : 'z';
+        const cur = b.params as any;
+        if (cur[xKey] === t.position.x && cur[yKey] === t.position.y && cur[zKey] === t.position.z) return b;
+        changed = true;
+        return { ...b, params: { ...b.params, [xKey]: t.position.x, [yKey]: t.position.y, [zKey]: t.position.z } };
+      });
+      return changed ? next : prev;
+    });
+  }, [targets]);
 
   useEffect(() => {
     const pending = loadPendingSimulationState();
@@ -98,6 +204,7 @@ export default function Home() {
 
   const activeBlock = sequenceBlocks.find(b => b.instanceId === activeBlockId);
   const editingTarget = targets.find(t => t.id === editingTargetId);
+  const editingObject = objectState.objects.find(o => o.id === editingObjectId);
 
   const handleProjectNameChange = useCallback((name: string) => {
     const newName = name || 'Untitled';
@@ -112,7 +219,7 @@ export default function Home() {
       if (simulationPaused) {
         console.log('Resuming simulation');
         setSimulationPaused(false);
-        setSimState(s => s ? { ...s, executionState: 'executing' } : s);
+        setSimStateTracked(s => s ? { ...s, executionState: 'executing' } : s);
         
         const resumeExecution = () => {
           if (!simulationRef.current.running) return;
@@ -120,21 +227,17 @@ export default function Home() {
           const blockIndex = simulationRef.current.blockIndex;
           if (blockIndex >= sequenceBlocks.length) {
             console.log('Sequence complete');
+            for (const t of simulationRef.current.phaseTimeouts) clearTimeout(t);
+            simulationRef.current.phaseTimeouts = [];
             simulationRef.current.running = false;
             setSimulationMode(false);
             setSimulationPaused(false);
             setSimulationCompleted(true);
             setActiveBlockId(null);
             setSimMessage('Simulation complete');
-            if (simState) {
-              const committedObjects = objectState.objects.map(existingObj => {
-                const simObj = simState.objects.find(so => so.id === existingObj.id);
-                if (simObj) return { ...existingObj, position: simObj.position };
-                return existingObj;
-              });
-              const newObjectState = { ...objectState, objects: committedObjects };
-              setObjectState(newObjectState);
-              saveObjectState(newObjectState);
+            const finalState = flushPendingPlacement(latestSimStateRef.current);
+            if (finalState) {
+              commitSimObjectsToObjectState(finalState);
             }
             setSimState(null);
             return;
@@ -155,26 +258,31 @@ export default function Home() {
           });
 
           let delay = 1000;
-          setSimState(currentState => {
+          setSimStateTracked(currentState => {
             if (!currentState) return currentState;
             const nextState = { ...currentState, currentBlockIndex: blockIndex };
 
             switch (block.type) {
               case 'move': {
+                let goal: { x: number; y: number; z: number } | null = null;
                 if (target) {
-                  nextState.robotPosition = { ...target.position };
+                  goal = { ...target.position };
                   nextState.message = `Moving to ${target.name}`;
                   delay = 1500;
-                } else if (block.params?.targetX !== undefined) {
-                  nextState.robotPosition = { x: block.params.targetX, y: block.params.targetY || 0, z: block.params.targetZ || 0 };
+                } else if (block.params?.x !== undefined || block.params?.targetX !== undefined) {
+                  goal = {
+                    x: block.params?.x ?? block.params?.targetX ?? 0,
+                    y: block.params?.y ?? block.params?.targetY ?? 0,
+                    z: block.params?.z ?? block.params?.targetZ ?? 0,
+                  };
                   nextState.message = 'Moving to position';
                   delay = 1500;
                 } else {
                   setSimMessage('No position for Move');
                   delay = 500;
                 }
-                if (nextState.heldObject) {
-                  nextState.objects = nextState.objects.map(o => o.id === nextState.heldObject!.id ? { ...o, position: { ...nextState.robotPosition } } : o);
+                if (goal) {
+                  nextState.gripperGoal = goal;
                 }
                 break;
               }
@@ -208,31 +316,91 @@ export default function Home() {
                   }
                 }
                 if (objToPick) {
-                  nextState.heldObject = objToPick;
-                  nextState.objects = nextState.objects.map(o => o.id === objToPick!.id ? { ...o, state: 'held', currentHolderId: 'robot' } : o);
-                  nextState.message = `Picked ${objToPick.id}`;
+                  pendingPickObjectIdRef.current = objToPick.id;
+                  nextState.gripperGoal = { x: objToPick.position.x, y: objToPick.position.y + 0.05, z: objToPick.position.z };
+                  nextState.message = `Reaching for ${objToPick.id}`;
+                  const objId = objToPick.id;
+                  const t = setTimeout(() => {
+                    if (!simulationRef.current.running) return;
+                    setSimStateTracked(s => {
+                      if (!s) return s;
+                      const updatedObjects = s.objects.map((o): SimObject => o.id === objId ? { ...o, state: 'held' as const, currentHolderId: 'robot' } : o);
+                      const held = updatedObjects.find(o => o.id === objId) ?? null;
+                      if (!held) return s;
+                      return {
+                        ...s,
+                        heldObject: held,
+                        objects: updatedObjects,
+                        message: `Picked ${objId}`,
+                      };
+                    });
+                  }, APPROACH_MS);
+                  simulationRef.current.phaseTimeouts.push(t);
                 } else {
+                  pendingPickObjectIdRef.current = null;
                   nextState.message = 'No object to pick';
                 }
-                delay = 1000;
+                delay = APPROACH_MS + POST_ACTION_MS;
                 break;
               }
               case 'place': {
-                if (nextState.heldObject && target) {
+                const heldObj = resolveHeldObject(nextState);
+                if (heldObj) {
+                  nextState.heldObject = heldObj;
+                }
+
+                if (heldObj && target) {
                   const placementY = target.type === 'zone' ? target.position.y + 0.20 : target.position.y + 0.05;
                   const placementPos = { x: target.position.x, y: placementY, z: target.position.z };
-                  nextState.objects = nextState.objects.map(o => o.id === nextState.heldObject!.id ? { ...o, position: placementPos, targetId: target.id, state: 'placed', currentHolderId: null } : o);
-                  nextState.heldObject = null;
-                  nextState.message = `Placed at ${target.name}`;
-                } else if (nextState.heldObject) {
-                  const dropPos = { ...nextState.robotPosition, y: 0 };
-                  nextState.objects = nextState.objects.map(o => o.id === nextState.heldObject!.id ? { ...o, position: dropPos, targetId: null, state: 'placed', currentHolderId: null } : o);
-                  nextState.heldObject = null;
-                  nextState.message = 'Placed object';
+                  nextState.gripperGoal = placementPos;
+                  nextState.message = `Placing at ${target.name}`;
+
+                  const heldId = heldObj.id;
+                  const targetId = target.id;
+                  const targetName = target.name;
+                  pendingPlacementRef.current = { objectId: heldId, position: placementPos, targetId };
+                  const t = setTimeout(() => {
+                    if (!simulationRef.current.running) return;
+                    setSimStateTracked(s => {
+                      if (!s) return s;
+                      pendingPickObjectIdRef.current = null;
+                      pendingPlacementRef.current = null;
+                      persistPlacedObject(heldId, placementPos);
+                      return {
+                        ...s,
+                        objects: s.objects.map(o => o.id === heldId ? { ...o, position: placementPos, targetId, state: 'placed', currentHolderId: null } : o),
+                        heldObject: null,
+                        message: `Placed at ${targetName}`,
+                      };
+                    });
+                  }, APPROACH_MS);
+                  simulationRef.current.phaseTimeouts.push(t);
+                } else if (heldObj) {
+                  const heldId = heldObj.id;
+                  const dropPreview = nextState.gripperGoal ? { ...nextState.gripperGoal } : heldObj.position;
+                  pendingPlacementRef.current = { objectId: heldId, position: dropPreview, targetId: null };
+                  const t = setTimeout(() => {
+                    if (!simulationRef.current.running) return;
+                    setSimStateTracked(s => {
+                      if (!s) return s;
+                      pendingPickObjectIdRef.current = null;
+                      pendingPlacementRef.current = null;
+                      const drop = s.gripperGoal ? { ...s.gripperGoal } : s.objects.find(o => o.id === heldId)?.position ?? { x: 0, y: 0, z: 0 };
+                      persistPlacedObject(heldId, drop);
+                      return {
+                        ...s,
+                        objects: s.objects.map(o => o.id === heldId ? { ...o, position: drop, targetId: null, state: 'placed', currentHolderId: null } : o),
+                        heldObject: null,
+                        message: 'Placed object',
+                      };
+                    });
+                  }, APPROACH_MS);
+                  simulationRef.current.phaseTimeouts.push(t);
+                  nextState.message = 'Placing object';
                 } else {
                   nextState.message = 'No object held to place';
                 }
-                delay = 1000;
+                delay = APPROACH_MS + POST_ACTION_MS;
                 break;
               }
               case 'rotate': {
@@ -268,7 +436,7 @@ export default function Home() {
       } else {
         console.log('Pausing simulation');
         setSimulationPaused(true);
-        setSimState(s => s ? { ...s, executionState: 'paused' } : s);
+        setSimStateTracked(s => s ? { ...s, executionState: 'paused' } : s);
         if (simulationRef.current.timeout) {
           clearTimeout(simulationRef.current.timeout);
           simulationRef.current.timeout = null;
@@ -283,6 +451,8 @@ export default function Home() {
       const blockIndex = simulationRef.current.blockIndex;
       if (blockIndex >= sequenceBlocks.length) {
         console.log('Sequence complete');
+        for (const t of simulationRef.current.phaseTimeouts) clearTimeout(t);
+        simulationRef.current.phaseTimeouts = [];
         simulationRef.current.running = false;
         setSimulationMode(false);
         setSimulationPaused(false);
@@ -290,23 +460,9 @@ export default function Home() {
         setActiveBlockId(null);
         setSimMessage('Simulation complete');
 
-        if (simState) {
-          const committedObjects = objectState.objects.map(existingObj => {
-            const simObj = simState.objects.find(so => so.id === existingObj.id);
-            if (simObj) {
-              return {
-                ...existingObj,
-                position: simObj.position,
-              };
-            }
-            return existingObj;
-          });
-          const newObjectState = {
-            ...objectState,
-            objects: committedObjects,
-          };
-          setObjectState(newObjectState);
-          saveObjectState(newObjectState);
+        const finalState = flushPendingPlacement(latestSimStateRef.current);
+        if (finalState) {
+          commitSimObjectsToObjectState(finalState);
         }
 
         setSimState(null);
@@ -329,32 +485,33 @@ export default function Home() {
 
       let delay = 1000;
 
-      setSimState(currentState => {
+      setSimStateTracked(currentState => {
         if (!currentState) return currentState;
 
         const nextState = { ...currentState, currentBlockIndex: blockIndex };
 
         switch (block.type) {
           case 'move': {
+            let goal: { x: number; y: number; z: number } | null = null;
             if (target) {
-              nextState.robotPosition = { ...target.position };
+              goal = { ...target.position };
               nextState.message = `Moving to ${target.name}`;
               delay = 1500;
-            } else if (block.params?.targetX !== undefined) {
-              nextState.robotPosition = { x: block.params.targetX, y: block.params.targetY || 0, z: block.params.targetZ || 0 };
+            } else if (block.params?.x !== undefined || block.params?.targetX !== undefined) {
+              goal = {
+                x: block.params?.x ?? block.params?.targetX ?? 0,
+                y: block.params?.y ?? block.params?.targetY ?? 0,
+                z: block.params?.z ?? block.params?.targetZ ?? 0,
+              };
               nextState.message = 'Moving to position';
               delay = 1500;
             } else {
               setSimMessage('No position for Move');
               delay = 500;
             }
-            // Update object position if held
-            if (nextState.heldObject) {
-              nextState.objects = nextState.objects.map(o => 
-                o.id === nextState.heldObject!.id
-                  ? { ...o, position: { ...nextState.robotPosition } }
-                  : o
-              );
+            if (goal) {
+              // Base is fixed at origin — only joints bend via IK to reach the goal.
+              nextState.gripperGoal = goal;
             }
             break;
           }
@@ -404,51 +561,98 @@ export default function Home() {
             }
 
             if (objToPick) {
-              nextState.heldObject = objToPick;
-              // Mark object as held
-              nextState.objects = nextState.objects.map(o =>
-                o.id === objToPick!.id
-                  ? { ...o, state: 'held', currentHolderId: 'robot' }
-                  : o
-              );
-              nextState.message = `Picked ${objToPick.id}`;
+              pendingPickObjectIdRef.current = objToPick.id;
+              // Phase 1: only set the gripper goal so the arm reaches toward the box.
+              // The box stays still — we attach it after the arm arrives.
+              nextState.gripperGoal = { x: objToPick.position.x, y: objToPick.position.y + 0.05, z: objToPick.position.z };
+              nextState.message = `Reaching for ${objToPick.id}`;
+
+              const objId = objToPick.id;
+              const t = setTimeout(() => {
+                if (!simulationRef.current.running) return;
+                setSimStateTracked(s => {
+                  if (!s) return s;
+                  const updatedObjects = s.objects.map((o): SimObject => o.id === objId ? { ...o, state: 'held' as const, currentHolderId: 'robot' } : o);
+                  const held = updatedObjects.find(o => o.id === objId) ?? null;
+                  if (!held) return s;
+                  return {
+                    ...s,
+                    heldObject: held,
+                    objects: updatedObjects,
+                    message: `Picked ${objId}`,
+                  };
+                });
+              }, APPROACH_MS);
+              simulationRef.current.phaseTimeouts.push(t);
             } else {
+              pendingPickObjectIdRef.current = null;
               nextState.message = 'No object to pick';
             }
-            delay = 1000;
+            delay = APPROACH_MS + POST_ACTION_MS;
             break;
           }
           case 'place': {
-            if (nextState.heldObject && target) {
-              // Calculate proper placement position based on target type
-              let placementY: number;
-              if (target.type === 'zone') {
-                placementY = target.position.y + 0.20;
-              } else {
-                placementY = target.position.y + 0.05;
-              }
+            const heldObj = resolveHeldObject(nextState);
+            if (heldObj) {
+              nextState.heldObject = heldObj;
+            }
+
+            if (heldObj && target) {
+              // Phase 1: set the gripper goal to the placement spot. The held box rides the gripper
+              // through IK because state stays 'held' until the arm arrives.
+              const placementY = target.type === 'zone' ? target.position.y + 0.20 : target.position.y + 0.05;
               const placementPos = { x: target.position.x, y: placementY, z: target.position.z };
-              nextState.objects = nextState.objects.map(o =>
-                o.id === nextState.heldObject!.id
-                  ? { ...o, position: placementPos, targetId: target.id, state: 'placed', currentHolderId: null }
-                  : o
-              );
-              nextState.heldObject = null;
-              nextState.message = `Placed at ${target.name}`;
-            } else if (nextState.heldObject) {
-              // Detach object at CURRENT robot location if no target is specified
-              const dropPos = { ...nextState.robotPosition, y: 0 };
-              nextState.objects = nextState.objects.map(o => 
-                o.id === nextState.heldObject!.id
-                  ? { ...o, position: dropPos, targetId: null, state: 'placed', currentHolderId: null }
-                  : o
-              );
-              nextState.heldObject = null;
-              nextState.message = 'Placed object';
+              nextState.gripperGoal = placementPos;
+              nextState.message = `Placing at ${target.name}`;
+
+              const heldId = heldObj.id;
+              const targetId = target.id;
+              const targetName = target.name;
+              pendingPlacementRef.current = { objectId: heldId, position: placementPos, targetId };
+              const t = setTimeout(() => {
+                if (!simulationRef.current.running) return;
+                setSimStateTracked(s => {
+                  if (!s) return s;
+                  pendingPickObjectIdRef.current = null;
+                  pendingPlacementRef.current = null;
+                  persistPlacedObject(heldId, placementPos);
+                  return {
+                    ...s,
+                    objects: s.objects.map(o => o.id === heldId ? { ...o, position: placementPos, targetId, state: 'placed', currentHolderId: null } : o),
+                    heldObject: null,
+                    message: `Placed at ${targetName}`,
+                  };
+                });
+              }, APPROACH_MS);
+              simulationRef.current.phaseTimeouts.push(t);
+            } else if (heldObj) {
+              // No target specified — drop where the gripper currently is.
+              const heldId = heldObj.id;
+              const dropPreview = nextState.gripperGoal ? { ...nextState.gripperGoal } : heldObj.position;
+              pendingPlacementRef.current = { objectId: heldId, position: dropPreview, targetId: null };
+              const t = setTimeout(() => {
+                if (!simulationRef.current.running) return;
+                setSimStateTracked(s => {
+                  if (!s) return s;
+                  pendingPickObjectIdRef.current = null;
+                  pendingPlacementRef.current = null;
+                  // Use last known gripper goal as drop point, falling back to current heldObject position.
+                  const drop = s.gripperGoal ? { ...s.gripperGoal } : s.objects.find(o => o.id === heldId)?.position ?? { x: 0, y: 0, z: 0 };
+                  persistPlacedObject(heldId, drop);
+                  return {
+                    ...s,
+                    objects: s.objects.map(o => o.id === heldId ? { ...o, position: drop, targetId: null, state: 'placed', currentHolderId: null } : o),
+                    heldObject: null,
+                    message: 'Placed object',
+                  };
+                });
+              }, APPROACH_MS);
+              simulationRef.current.phaseTimeouts.push(t);
+              nextState.message = 'Placing object';
             } else {
               nextState.message = 'No object held to place';
             }
-            delay = 1000;
+            delay = APPROACH_MS + POST_ACTION_MS;
             break;
           }
           case 'rotate': {
@@ -511,13 +715,17 @@ simulationRef.current.blockIndex++;
     initialState.currentBlockIndex = 0;
     initialState.isPlaying = true;
     initialState.executionState = 'executing';
+    latestSimStateRef.current = initialState;
+    pendingPickObjectIdRef.current = null;
+    pendingPlacementRef.current = null;
     setSimState(initialState);
 
     simulationRef.current.running = true;
     simulationRef.current.blockIndex = 0;
+    simulationRef.current.phaseTimeouts = [];
 
     simulationRef.current.timeout = setTimeout(runSimulation, 500);
-  }, [sequenceBlocks, targets, objectState.objects]);
+  }, [sequenceBlocks, targets, objectState.objects, resolveHeldObject, persistPlacedObject, setSimStateTracked, commitSimObjectsToObjectState]);
 
   const handleAddAction = useCallback((action: ActionCardData) => {
     const blockType = selectedRobot?.actionMap?.[action.id] || action.id.replace('action-', '').replace('-scara', '').replace('action-', '') as BlockType;
@@ -554,6 +762,7 @@ simulationRef.current.blockIndex++;
   const handleBackToSequence = useCallback(() => {
     setActiveBlockId(null);
     setEditingTargetId(null);
+    setEditingObjectId(null);
   }, []);
 
   const handleTargetSelectFromCanvas = useCallback((id: string) => {
@@ -601,33 +810,23 @@ simulationRef.current.blockIndex++;
       clearTimeout(simulationRef.current.timeout);
       simulationRef.current.timeout = null;
     }
+    for (const t of simulationRef.current.phaseTimeouts) clearTimeout(t);
+    simulationRef.current.phaseTimeouts = [];
+    pendingPickObjectIdRef.current = null;
+    pendingPlacementRef.current = null;
     simulationRef.current.running = false;
     setSimulationMode(false);
     setSimulationPaused(false);
     setSimMessage(null);
     setActiveBlockId(null);
 
-    if (simState) {
-      const committedObjects = objectState.objects.map(existingObj => {
-        const simObj = simState.objects.find(so => so.id === existingObj.id);
-        if (simObj) {
-          return {
-            ...existingObj,
-            position: simObj.position,
-          };
-        }
-        return existingObj;
-      });
-      const newObjectState = {
-        ...objectState,
-        objects: committedObjects,
-      };
-      setObjectState(newObjectState);
-      saveObjectState(newObjectState);
+    const finalState = flushPendingPlacement(latestSimStateRef.current);
+    if (finalState) {
+      commitSimObjectsToObjectState(finalState);
     }
 
     setSimState(null);
-  }, [simState, objectState]);
+  }, [commitSimObjectsToObjectState, flushPendingPlacement]);
 
   const handleStartNewClick = useCallback(() => {
     setShowStartNewModal(true);
@@ -802,7 +1001,18 @@ simulationRef.current.blockIndex++;
     const updatedState = { ...objectState, selectedObjectId: objectId };
     setObjectState(updatedState);
     saveObjectState(updatedState);
-}, [objectState]);
+    setEditingObjectId(objectId);
+    setActiveBlockId(null);
+    setEditingTargetId(null);
+  }, [objectState]);
+
+  const handleObjectUpdate = useCallback((updated: PlacedObject) => {
+    setObjectState(prev => {
+      const next = { ...prev, objects: prev.objects.map(o => o.id === updated.id ? updated : o) };
+      saveObjectState(next);
+      return next;
+    });
+  }, []);
 
   const handleShare = useCallback(() => {
     let sanitizedRobot = null;
@@ -910,15 +1120,22 @@ simulationRef.current.blockIndex++;
         <aside style={{ width: rightOpen ? '360px' : '0px', height: '100%', backgroundColor: '#ffffff', borderLeft: rightOpen ? '1px solid #e2e8f0' : 'none', boxShadow: rightOpen ? '-4px 0 16px rgba(0,0,0,0.02)' : 'none', zIndex: 10, transition: 'all 0.3s', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <div style={{ width: '360px', height: '100%', position: 'relative', overflow: 'hidden' }}>
             <div style={{ width: '100%', height: '100%', padding: '24px', boxSizing: 'border-box', overflowY: 'auto' }}>
-              <SequencePanel blocks={sequenceBlocks} activeBlockId={activeBlockId} onBlockSelect={handleBlockSelect} onBlockDelete={handleBlockDelete} onBlockReorder={setSequenceBlocks} />
+              <SequencePanel blocks={sequenceBlocks} activeBlockId={activeBlockId} onBlockSelect={handleBlockSelect} onBlockDelete={handleBlockDelete} onBlockReorder={setSequenceBlocks} targets={targets} />
             </div>
             
-            <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', backgroundColor: '#ffffff', borderTop: '1px solid #e2e8f0', boxShadow: '0 -4px 16px rgba(0,0,0,0.05)', borderTopLeftRadius: '16px', borderTopRightRadius: '16px', transform: (activeBlock || editingTarget) ? 'translateY(0)' : 'translateY(100%)', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', zIndex: 30, maxHeight: '80%', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', backgroundColor: '#ffffff', borderTop: '1px solid #e2e8f0', boxShadow: '0 -4px 16px rgba(0,0,0,0.05)', borderTopLeftRadius: '16px', borderTopRightRadius: '16px', transform: (activeBlock || editingTarget || editingObject) ? 'translateY(0)' : 'translateY(100%)', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', zIndex: 30, maxHeight: '80%', display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', borderBottom: '1px solid #f0f0f0' }}>
                 <div style={{ width: '36px', height: '4px', backgroundColor: '#e2e8f0', borderRadius: '2px' }} />
               </div>
               <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
-                {editingTarget ? (
+                {editingObject ? (
+                  <ObjectPropertiesPanel
+                    object={editingObject}
+                    targets={targets}
+                    onBack={handleBackToSequence}
+                    onObjectUpdate={handleObjectUpdate}
+                  />
+                ) : editingTarget ? (
                   <TargetPropertiesPanel
                     target={editingTarget}
                     onBack={handleBackToSequence}

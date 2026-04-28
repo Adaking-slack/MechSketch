@@ -31,12 +31,29 @@ export default function PropertiesPanel({
     onParamsChange({ ...params, [key]: value });
   };
 
-  const renderPlaceFields = () => {
-    if (type !== 'place') return null;
+  // Pick the params keys this block uses for an XYZ destination.
+  const fieldKeys: { x: keyof BlockParams; y: keyof BlockParams; z: keyof BlockParams } | null =
+    type === 'place'
+      ? { x: 'targetX', y: 'targetY', z: 'targetZ' }
+      : type === 'move' || type === 'pick' || type === 'inspect'
+      ? { x: 'x', y: 'y', z: 'z' }
+      : null;
 
-    const hasTargets = targets.length > 0;
+  const handleTargetPick = (target: Target) => {
+    if (!fieldKeys) return;
+    onParamsChange({
+      ...params,
+      targetId: target.id,
+      [fieldKeys.x]: target.position.x,
+      [fieldKeys.y]: target.position.y,
+      [fieldKeys.z]: target.position.z,
+    });
+    onTargetSelect?.(target.id);
+  };
 
-    if (!hasTargets) {
+  const renderTargetPicker = () => {
+    if (!fieldKeys) return null;
+    if (targets.length === 0) {
       return (
         <div style={{ padding: '16px', backgroundColor: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: '8px', textAlign: 'center', marginBottom: '16px' }}>
           <div style={{ fontSize: '13px', fontWeight: 500, color: '#92400E', marginBottom: '4px' }}>
@@ -48,35 +65,39 @@ export default function PropertiesPanel({
         </div>
       );
     }
-
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-        {targets.map((target) => (
-          <button
-            key={target.id}
-            onClick={() => {
-              handleChange('targetId', target.id);
-              onTargetSelect?.(target.id);
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '10px 12px',
-              backgroundColor: '#F6F7F9',
-              border: `1px solid ${params.targetId === target.id ? '#00376E' : '#EAEAEA'}`,
-              borderRadius: '8px',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'border-color 0.15s',
-            }}
-          >
-            <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: target.color }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '13px', fontWeight: 500, color: '#374049' }}>{target.name}</div>
-            </div>
-          </button>
-        ))}
+      <div style={{ marginBottom: '16px' }}>
+        <h4 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#888', margin: '0 0 8px 0' }}>
+          {type === 'place' ? 'Place at' : type === 'pick' ? 'Pick from' : 'Move to'}
+        </h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {targets.map((target) => (
+            <button
+              key={target.id}
+              onClick={() => handleTargetPick(target)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '10px 12px',
+                backgroundColor: '#F6F7F9',
+                border: `1px solid ${params.targetId === target.id ? '#00376E' : '#EAEAEA'}`,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'border-color 0.15s',
+              }}
+            >
+              <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: target.color }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', fontWeight: 500, color: '#374049' }}>{target.name}</div>
+                <div style={{ fontSize: '11px', color: '#888' }}>
+                  X:{target.position.x.toFixed(2)} Y:{target.position.y.toFixed(2)} Z:{target.position.z.toFixed(2)}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
     );
   };
@@ -88,13 +109,21 @@ export default function PropertiesPanel({
       case 'inspect':
         return (
           <>
+            {renderTargetPicker()}
             <ParamField label="X" value={params.x ?? 0} onChange={(v) => handleChange('x', v)} step={0.05} labelWidth="20px" />
             <ParamField label="Y" value={params.y ?? 0} onChange={(v) => handleChange('y', v)} step={0.05} labelWidth="20px" />
             <ParamField label="Z" value={params.z ?? 0} onChange={(v) => handleChange('z', v)} step={0.05} labelWidth="20px" />
           </>
         );
       case 'place':
-        return renderPlaceFields();
+        return (
+          <>
+            {renderTargetPicker()}
+            <ParamField label="X" value={params.targetX ?? 0} onChange={(v) => handleChange('targetX', v)} step={0.05} labelWidth="20px" />
+            <ParamField label="Y" value={params.targetY ?? 0} onChange={(v) => handleChange('targetY', v)} step={0.05} labelWidth="20px" />
+            <ParamField label="Z" value={params.targetZ ?? 0} onChange={(v) => handleChange('targetZ', v)} step={0.05} labelWidth="20px" />
+          </>
+        );
       case 'wait':
         return (
           <ParamField label="Duration" value={params.duration ?? 1} onChange={(v) => handleChange('duration', v)} step={0.5} />

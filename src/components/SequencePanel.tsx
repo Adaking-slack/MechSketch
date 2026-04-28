@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, ChevronRight } from 'lucide-react';
 import type { SequenceBlock, BlockType } from '../data/robots.data';
 import { getBlockSummary } from '../data/robots.data';
+import type { Target } from '../utils/robotStorage';
 import {
   DndContext,
   closestCenter,
@@ -26,6 +27,7 @@ interface SequencePanelProps {
   onBlockSelect: (instanceId: string) => void;
   onBlockDelete: (instanceId: string) => void;
   onBlockReorder: (blocks: SequenceBlock[]) => void;
+  targets?: Target[];
 }
 
 interface SequenceBlockItemProps {
@@ -33,9 +35,10 @@ interface SequenceBlockItemProps {
   isActive: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  targetLookup?: (id: string) => { name: string } | undefined;
 }
 
-function SortableBlockItem({ block, isActive, onSelect, onDelete }: SequenceBlockItemProps) {
+function SortableBlockItem({ block, isActive, onSelect, onDelete, targetLookup }: SequenceBlockItemProps) {
   const [isHovered, setIsHovered] = useState(false);
   const {
     attributes,
@@ -110,7 +113,7 @@ function SortableBlockItem({ block, isActive, onSelect, onDelete }: SequenceBloc
             overflow: 'hidden',
             textOverflow: 'ellipsis',
           }}>
-            {getBlockSummary(block.type as BlockType, block.params)}
+            {getBlockSummary(block.type as BlockType, block.params, targetLookup)}
           </div>
         </div>
         <button
@@ -145,7 +148,9 @@ export default function SequencePanel({
   onBlockSelect,
   onBlockDelete,
   onBlockReorder,
+  targets,
 }: SequencePanelProps) {
+  const targetLookup = targets ? (id: string) => targets.find(t => t.id === id) : undefined;
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -241,6 +246,7 @@ export default function SequencePanel({
                       isActive={activeBlockId === block.instanceId}
                       onSelect={() => onBlockSelect(block.instanceId)}
                       onDelete={() => onBlockDelete(block.instanceId)}
+                      targetLookup={targetLookup}
                     />
                     {index < blocks.length - 1 && (
                       <ChevronRight size={16} color="#ddd" style={{ flexShrink: 0 }} />
