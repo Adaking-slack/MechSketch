@@ -1,27 +1,37 @@
 import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { objectsData } from '../data/objects.data';
 import ObjectViewer from '../components/ObjectViewer';
-import { saveSelectedObject } from '../utils/robotStorage';
+import { saveSelectedObject, clearSelectedObject } from '../utils/robotStorage';
 
 export default function SelectObject() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSelect = useCallback(() => {
     const selected = objectsData.find(obj => obj.id === selectedId);
     if (selected) {
       saveSelectedObject(selected);
-      navigate('/planner');
+      if (location.state?.flowType === 'editing') {
+        navigate('/home');
+      } else {
+        navigate('/planner');
+      }
     }
-  }, [selectedId, navigate]);
+  }, [selectedId, navigate, location.state?.flowType]);
 
   const handleSkip = useCallback(() => {
     // Navigate without saving an object
-    navigate('/planner');
-  }, [navigate]);
+    clearSelectedObject();
+    if (location.state?.flowType === 'editing') {
+      navigate('/home');
+    } else {
+      navigate('/planner');
+    }
+  }, [navigate, location.state?.flowType]);
 
   return (
     <div style={{
@@ -74,12 +84,12 @@ export default function SelectObject() {
       </div>
 
       {/* Header Section */}
-      <div style={{ textAlign: 'center', marginTop: '24px', marginBottom: '48px' }}>
+      <div style={{ textAlign: 'center', marginTop: '', marginBottom: '48px' }}>
         <h1 style={{
           fontSize: '22px',
           lineHeight: '31px',
           letterSpacing: '-1px',
-          fontWeight: 500,
+          fontWeight: 700,
           color: '#374049',
           margin: '0 0 8px 0'
         }}>
@@ -87,7 +97,7 @@ export default function SelectObject() {
         </h1>
         <p style={{
           fontSize: '15px',
-          lineHeight: '18px',
+          lineHeight: '23px',
           letterSpacing: '-0.5px',
           fontWeight: 400,
           color: '#374049',
@@ -103,7 +113,7 @@ export default function SelectObject() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        padding: '0 32px',
+        padding: '12px 24px',
         overflowY: 'auto'
       }}>
         {objectsData.length === 0 ? (
@@ -114,7 +124,7 @@ export default function SelectObject() {
         ) : (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateColumns: 'repeat(4, 1fr)',
             gap: '24px',
             maxWidth: '1000px',
             width: '100%',
@@ -131,7 +141,7 @@ export default function SelectObject() {
                   animate={{
                     scale: isSelected ? 1.05 : 1,
                     borderColor: isSelected ? '#00376E' : 'transparent',
-                    boxShadow: isSelected ? '0 8px 24px rgba(0, 55, 110, 0.15)' : '0 4px 12px rgba(0,0,0,0.05)'
+                    boxShadow: isSelected ? '0 8px 24px rgba(234, 241, 248, 0.15)' : '0 4px 12px rgba(0,0,0,0.05)'
                   }}
                   transition={{ duration: 0.2, ease: 'easeInOut' }}
                   style={{
@@ -172,19 +182,19 @@ export default function SelectObject() {
         )}
 
         {/* Continue Button */}
-        <div style={{ width: '100%', marginTop: 'auto', marginBottom: '48px', paddingTop: '24px' }}>
+        <div style={{ width: '100%', marginTop: '32px', marginBottom: '48px', paddingTop: '24px', display: 'flex', justifyContent: 'center' }}>
           <button
             disabled={!selectedId}
             onClick={handleSelect}
             style={{
-              width: '100%',
-              padding: '12px 120px',
+              padding: '10px 80px',
               backgroundColor: '#00376E',
               color: '#ECF5FE',
               border: 'none',
               borderRadius: '12px',
               fontSize: '15px',
-              fontWeight: 600,
+              fontWeight: 500,
+              lineHeight: '23px',
               cursor: 'pointer',
               opacity: selectedId ? 1 : 0.5,
               transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',

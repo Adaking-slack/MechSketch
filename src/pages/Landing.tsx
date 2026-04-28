@@ -97,7 +97,7 @@ export default function Landing() {
             lineHeight: '25px',
             letterSpacing: '-0.01em',
             color: '#ECF5FE',
-            fontWeight: 600,
+            fontWeight: 500,
             marginBottom: '120x'
           }}>
             Mechsketch
@@ -130,11 +130,11 @@ export default function Landing() {
               onClick={() => navigate('/auth?view=signup')}
               style={{
                 height: '46px',
-                padding: '8px 80px',
+                padding: '2px 80px',
                 backgroundColor: '#ECF5FE',
                 color: '#001529',
                 fontSize: '15px',
-                lineHeight: '25px',
+                lineHeight: '22px',
                 letterSpacing: '-0.01em',
                 fontWeight: 500,
                 border: 'none',
@@ -185,16 +185,15 @@ export default function Landing() {
               <button
                 onClick={() => navigate('/auth?view=login')}
                 style={{
-                  height: '35px',
-                  padding: '6px 16px',
                   backgroundColor: '#ECF5FE',
                   color: '#374049',
-                  fontSize: '14px',
+                  fontSize: '15px',
                   lineHeight: '23px',
+                  fontWeight: 500,
+                  padding: '7px 20px',
                   border: 'none',
                   borderRadius: '6px',
                   cursor: 'pointer',
-                  fontWeight: 500,
                   transition: 'opacity 0.2s'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
@@ -340,28 +339,6 @@ export default function Landing() {
           />
         </div>
 
-        {/* Call to Action Button */}
-        <button
-          onClick={() => navigate('/auth?view=signup')}
-          style={{
-            backgroundColor: '#00376E',
-            color: '#ECF5FE',
-            fontSize: '15px',
-            lineHeight: '25px',
-            fontWeight: 500,
-            padding: '10px 80px',
-            border: 'none',
-            borderRadius: '10px',
-            cursor: 'pointer',
-            transition: 'opacity 0.2s',
-            maxWidth: '100%' // Prevents overflow on mobile screens
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
-          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-        >
-          Get started
-        </button>
-
       </motion.div>
 
       {/* FEATURE GRID SECTION (Section 4) */}
@@ -487,6 +464,28 @@ export default function Landing() {
             </motion.div>
           ))}
         </div>
+
+        {/* Button */}
+        <button
+          onClick={() => navigate('/auth?view=signup')}
+          style={{
+            backgroundColor: '#00376E',
+            color: '#ECF5FE',
+            fontSize: '15px',
+            fontWeight: 500,
+            lineHeight: '23px',
+            padding: '10px 80px',
+            border: 'none',
+            borderRadius: '10px',
+            cursor: 'pointer',
+            transition: 'opacity 0.2s',
+            marginTop: '48px'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+        >
+          Get Started
+        </button>
       </motion.div>
 
       {/* STEPS SECTION (Section 5) */}
@@ -724,6 +723,7 @@ export default function Landing() {
             color: '#ECF5FE',
             fontSize: '15px',
             fontWeight: 500,
+            lineHeight: '23px',
             padding: '10px 80px',
             border: 'none',
             borderRadius: '10px',
@@ -755,7 +755,7 @@ export default function Landing() {
           <div style={{ flex: '0 0 auto', maxWidth: '400px' }}>
             <div style={{
               fontSize: '20px',
-              fontWeight: 600,
+              fontWeight: 500,
               color: '#FFFFFF',
               letterSpacing: '-0.01em',
               marginBottom: '16px'
@@ -789,7 +789,7 @@ export default function Landing() {
             <div>
               <p style={{
                 fontSize: '14px',
-                fontWeight: 600,
+                fontWeight: 500,
                 color: '#FFFFFF',
                 margin: '0 0 8px 0'
               }}>

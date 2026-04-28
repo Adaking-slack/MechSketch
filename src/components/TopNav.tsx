@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Share2, ChevronDown, ChevronUp, Square, Play, Pause, RotateCcw, Settings, LogOut, Save, Home } from 'lucide-react';
+import { ChevronDown, ChevronUp, Square, Play, Pause, RotateCcw, LogOut, Save, Home, Download } from 'lucide-react';
 
 interface TopNavProps {
   projectName?: string;
@@ -10,18 +10,19 @@ interface TopNavProps {
   objectName?: string;
   onProjectNameChange?: (name: string) => void;
   onSimulate?: () => void;
-  onShare?: () => void;
   onStop?: () => void;
   onStartNew?: () => void;
   onSave?: () => void;
   onHome?: () => void;
   onDeleteProject?: () => void;
-  onSettings?: () => void;
+  onSettings?: () => void; // Unused, explicitly removed from UI
   onLogout?: () => void;
   simulationMode?: boolean;
   simulationPaused?: boolean;
   simulationCompleted?: boolean;
   canSave?: boolean;
+  onExport?: () => void;
+  hasSequence?: boolean;
 }
 
 export default function TopNav({
@@ -32,18 +33,18 @@ export default function TopNav({
   objectName,
   onProjectNameChange,
   onSimulate,
-  onShare,
   onStop,
   onStartNew,
   onSave,
   onHome,
   onDeleteProject,
-  onSettings,
   onLogout,
   simulationMode = false,
   simulationPaused = false,
   simulationCompleted = false,
   canSave = false,
+  onExport,
+  hasSequence = false,
 }: TopNavProps) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(projectName);
@@ -60,6 +61,10 @@ export default function TopNav({
       inputRef.current.select();
     }
   }, [editing]);
+
+  useEffect(() => {
+    setName(projectName);
+  }, [projectName]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -102,101 +107,114 @@ export default function TopNav({
   };
 
   const handleRobotObjectClick = () => {
-    navigate('/select-robot');
+    navigate('/select-robot', { state: { flowType: 'editing' } });
   };
 
   return (
     <nav style={styles.nav}>
       <div style={styles.container}>
-        {/* Left: File Menu + Project Name */}
+        {/* Left: File Menu */}
         <div style={styles.leftSection}>
-          {(onHome || onDeleteProject) && (
-            <div ref={fileMenuRef} style={{ position: 'relative' }}>
-              <button
-                onClick={() => setShowFileMenu(!showFileMenu)}
-                style={styles.fileBtn}
-              >
-                File
-                {showFileMenu ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </button>
-              {showFileMenu && (
-                <div style={styles.dropdownMenu}>
-                  {onHome && (
-                    <button
-                      onClick={() => {
-                        onHome();
-                        setShowFileMenu(false);
-                      }}
-                      style={styles.fileDropdownItem}
-                    >
-                      <Home size={14} />
-                      Home
-                    </button>
-                  )}
-                  {onDeleteProject && (
-                    <button
-                      onClick={() => {
-                        onDeleteProject();
-                        setShowFileMenu(false);
-                      }}
-                      style={{ ...styles.dropdownItem, color: '#dc2626' }}
-                    >
-                      Delete Project
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-          {editing ? (
-            <input
-              ref={inputRef}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={handleNameSubmit}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleNameSubmit();
-                if (e.key === 'Escape') {
-                  setName(projectName);
-                  setEditing(false);
-                }
-              }}
-              style={styles.input}
-            />
-          ) : (
+          <div ref={fileMenuRef} style={{ position: 'relative' }}>
             <button
-              onClick={() => setEditing(true)}
-              style={styles.projectNameBtn}
-              title="Click to edit project name"
+              onClick={() => setShowFileMenu(!showFileMenu)}
+              style={styles.fileBtn}
+              onMouseOver={(e) => e.currentTarget.style.opacity = '0.7'}
+              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
             >
-              {projectName}
+              File
+              {showFileMenu ? <ChevronUp size={24} color="#374049" /> : <ChevronDown size={24} color="#374049" />}
             </button>
-          )}
+            {showFileMenu && (
+              <div style={styles.dropdownMenu}>
+                {onHome && (
+                  <button
+                    onClick={() => {
+                      onHome();
+                      setShowFileMenu(false);
+                    }}
+                    style={styles.fileDropdownItem}
+                  >
+                    <Home size={14} />
+                    Home
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    if (hasSequence && onExport) {
+                      onExport();
+                      setShowFileMenu(false);
+                    }
+                  }}
+                  style={{
+                    ...styles.fileDropdownItem,
+                    opacity: hasSequence ? 1 : 0.5,
+                    cursor: hasSequence ? 'pointer' : 'not-allowed',
+                  }}
+                  disabled={!hasSequence}
+                  title={hasSequence ? "Export as JSON" : "No sequence to export"}
+                >
+                  <Download size={14} />
+                  Export
+                </button>
+                {onDeleteProject && (
+                  <button
+                    onClick={() => {
+                      onDeleteProject();
+                      setShowFileMenu(false);
+                    }}
+                    style={{ ...styles.fileDropdownItem, color: '#dc2626' }}
+                  >
+                    Delete Project
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Center: Robot/Object Name */}
+        {/* Center: Project Name */}
         <div style={styles.centerSection}>
-          {(robotName || objectName) ? (
-            <button onClick={handleRobotObjectClick} style={styles.robotObjectBtn}>
-              {robotName && <span style={styles.robotObjectName}>{robotName}</span>}
-              {robotName && objectName && <span style={styles.separator}>/</span>}
-              {objectName && <span style={styles.robotObjectName}>{objectName}</span>}
-            </button>
-          ) : (
-            <span style={styles.noSelection}>No robot selected</span>
-          )}
+          <div style={styles.projectNameContainer}>
+            {editing ? (
+              <input
+                ref={inputRef}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={handleNameSubmit}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleNameSubmit();
+                  if (e.key === 'Escape') {
+                    setName(projectName);
+                    setEditing(false);
+                  }
+                }}
+                style={styles.input}
+              />
+            ) : (
+              <button
+                onClick={() => setEditing(true)}
+                style={styles.projectNameBtn}
+                title="Click to edit project name"
+                onMouseOver={(e) => e.currentTarget.style.opacity = '0.7'}
+                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+              >
+                {projectName}
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Right: Simulate, Save, Share, User */}
+        {/* Right: Actions & Profile */}
         <div style={styles.rightSection}>
           {simulationMode && (
             <button
               onClick={onStop}
-              style={{
-                ...styles.stopBtn,
-              }}
+              style={styles.stopBtn}
+              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
             >
-              <Square size={12} />
+              <Square size={12} style={{ marginRight: '4px' }} />
               Stop
             </button>
           )}
@@ -205,6 +223,8 @@ export default function TopNav({
             <button
               onClick={onSave}
               style={styles.saveBtn}
+              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
             >
               <Save size={12} style={{ marginRight: '4px' }} />
               Save
@@ -219,6 +239,8 @@ export default function TopNav({
                 ? (simulationPaused ? '#10B981' : '#F59E0B')
                 : '#00376E',
             }}
+            onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
           >
             {simulationMode ? (
               simulationPaused ? (
@@ -238,26 +260,37 @@ export default function TopNav({
           </button>
 
           {!simulationMode && simulationCompleted && (
-            <button onClick={onStartNew} style={styles.startNewBtn}>
+            <button
+              onClick={onStartNew}
+              style={styles.startNewBtn}
+              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+            >
               <RotateCcw size={12} style={{ marginRight: '4px' }} />
               Start New
             </button>
           )}
 
-          {!simulationMode && (
-            <button onClick={onShare} style={styles.shareBtn}>
-              <Share2 size={14} style={styles.shareIcon} />
-              Share
-            </button>
-          )}
+          <button
+            onClick={handleRobotObjectClick}
+            style={styles.robotObjectBtn}
+            onMouseOver={(e) => e.currentTarget.style.opacity = '0.8'}
+            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+          >
+            <span>{robotName || 'No robot selected'}</span>
+            <span style={styles.separator}>/</span>
+            <span>{objectName || 'No object selected'}</span>
+          </button>
 
           <div style={{ position: 'relative' }} ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
               style={styles.userSection}
+              onMouseOver={(e) => e.currentTarget.style.opacity = '0.8'}
+              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
             >
               <div style={styles.avatar}>{userInitial}</div>
-              <ChevronDown size={18} style={styles.chevron} />
+              {showUserMenu ? <ChevronUp size={24} color="#000000" /> : <ChevronDown size={24} color="#000000" />}
             </button>
 
             {showUserMenu && (
@@ -265,19 +298,9 @@ export default function TopNav({
                 <button
                   onClick={() => {
                     setShowUserMenu(false);
-                    onSettings?.();
-                  }}
-                  style={styles.dropdownItem}
-                >
-                  <Settings size={16} />
-                  <span>Settings</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowUserMenu(false);
                     onLogout?.();
                   }}
-                  style={{ ...styles.dropdownItem, borderTop: '1px solid #e2e8f0' }}
+                  style={styles.dropdownItem}
                 >
                   <LogOut size={16} />
                   <span>Log out</span>
@@ -297,6 +320,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: '56px',
     backgroundColor: '#FFFFFF',
     borderBottom: '1px solid #E2E8F0',
+    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   },
   container: {
     display: 'flex',
@@ -305,24 +329,24 @@ const styles: Record<string, React.CSSProperties> = {
     height: '100%',
     padding: '0 24px',
   },
-leftSection: {
+  leftSection: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
   },
   fileBtn: {
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
+    gap: '6px', // 4-8px spacing requested
     padding: '6px 10px',
     borderRadius: '6px',
     border: 'none',
     backgroundColor: 'transparent',
-    color: '#4a5568',
-    fontSize: '14px',
-    fontWeight: 500,
+    color: '#374049',
+    fontSize: '15px',
+    lineHeight: '23px',
+    fontWeight: 600,
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    transition: 'opacity 0.2s',
   },
   dropdownMenu: {
     position: 'absolute',
@@ -351,182 +375,153 @@ leftSection: {
     cursor: 'pointer',
     transition: 'background-color 0.15s',
   },
-  homeBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '28px',
-    height: '28px',
-    borderRadius: '6px',
-    border: 'none',
-    backgroundColor: 'transparent',
-    color: '#4a5568',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-  },
   centerSection: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
-    gap: '8px',
+  },
+  projectNameContainer: {
+    backgroundColor: '#F6F7F9',
+    padding: '4px 12px',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxWidth: '300px',
   },
   projectNameBtn: {
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    fontSize: '14px',
-    lineHeight: '20px',
+    fontSize: '15px',
+    lineHeight: '23px',
     color: '#374049',
-    fontWeight: 500,
-    background: '#FFFFFF',
-    border: '1px solid #E2E8F0',
-    borderRadius: '6px',
+    fontWeight: 600,
+    background: 'transparent',
+    border: 'none',
     cursor: 'pointer',
-    padding: '6px 12px',
-    transition: 'all 0.15s',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    transition: 'opacity 0.15s',
   },
   input: {
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    fontSize: '14px',
-    lineHeight: '20px',
+    fontSize: '15px',
+    lineHeight: '23px',
     color: '#374049',
-    fontWeight: 500,
-    border: '1px solid #00376E',
-    borderRadius: '6px',
-    padding: '6px 12px',
+    fontWeight: 600,
+    border: 'none',
+    background: 'transparent',
     outline: 'none',
-    width: '150px',
+    width: '100%',
+    textAlign: 'center',
   },
   rightSection: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    gap: '12px',
+    gap: '16px',
   },
   robotObjectBtn: {
+    backgroundColor: '#ffffffff',
+    color: '#001529',
+    fontSize: '13px',
+    lineHeight: '18px',
+    fontWeight: 600,
+    border: '1px solid #EAEAEA',
+    cursor: 'pointer',
+    padding: '6px 12px',
+    borderRadius: '6px',
+    transition: 'opacity 0.15s',
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    padding: '8px 12px',
-    borderRadius: '6px',
-    transition: 'background-color 0.15s',
-  },
-  robotObjectName: {
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    fontSize: '14px',
-    fontWeight: 600,
-    color: '#00376E',
+    gap: '4px',
   },
   separator: {
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    fontSize: '14px',
-    fontWeight: 400,
-    color: '#888',
-  },
-  noSelection: {
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    fontSize: '14px',
-    color: '#888',
-    fontStyle: 'italic',
+    color: '#00857A',
+    fontWeight: 600,
   },
   simulateBtn: {
-    color: '#FFFFFF',
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    color: '#ECF5FE',
     fontSize: '13px',
     lineHeight: '18px',
     fontWeight: 500,
     border: 'none',
     borderRadius: '6px',
-    padding: '8px 16px',
+    padding: '6px 12px',
     cursor: 'pointer',
     transition: 'opacity 0.15s',
+    display: 'flex',
+    alignItems: 'center',
   },
   stopBtn: {
     backgroundColor: '#DC2626',
     color: '#FFFFFF',
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     fontSize: '13px',
     lineHeight: '18px',
-    fontWeight: 500,
+    fontWeight: 600,
     border: 'none',
     borderRadius: '6px',
-    padding: '8px 16px',
+    padding: '6px 12px',
     cursor: 'pointer',
     transition: 'opacity 0.15s',
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
   },
-  shareBtn: {
-    backgroundColor: '#F3F4F6',
-    color: '#374049',
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  saveBtn: {
+    backgroundColor: '#10B981',
+    color: '#FFFFFF',
     fontSize: '13px',
     lineHeight: '18px',
-    fontWeight: 500,
+    fontWeight: 600,
     border: 'none',
     borderRadius: '6px',
-    padding: '8px 16px',
+    padding: '6px 12px',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
-    transition: 'background-color 0.15s',
-  },
-  shareIcon: {
-    flexShrink: 0,
+    transition: 'opacity 0.15s',
   },
   startNewBtn: {
     backgroundColor: '#EF4444',
     color: '#FFFFFF',
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     fontSize: '13px',
     lineHeight: '18px',
-    fontWeight: 500,
+    fontWeight: 600,
     border: 'none',
     borderRadius: '6px',
-    padding: '8px 16px',
+    padding: '6px 12px',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
-    transition: 'background-color 0.15s',
+    transition: 'opacity 0.15s',
   },
   userSection: {
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
+    gap: '8px', // 6-10px spacing
     cursor: 'pointer',
-    marginLeft: '4px',
     backgroundColor: 'transparent',
     border: 'none',
-    padding: '4px',
-    borderRadius: '6px',
+    padding: '0',
+    transition: 'opacity 0.15s',
   },
   avatar: {
-    width: '32px',
-    height: '32px',
+    width: '36px',
+    height: '36px',
     borderRadius: '50%',
-    backgroundColor: '#0D9488',
+    backgroundColor: '#000000',
     color: '#FFFFFF',
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    fontSize: '13px',
+    fontSize: '18px',
     lineHeight: '18px',
-    fontWeight: 500,
+    fontWeight: 300,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  chevron: {
-    color: '#374049',
   },
   userDropdown: {
     position: 'absolute',
     top: '100%',
     right: 0,
-    marginTop: '8px',
+    marginTop: '12px',
     backgroundColor: '#ffffff',
     borderRadius: '8px',
     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
@@ -550,21 +545,5 @@ leftSection: {
     cursor: 'pointer',
     textAlign: 'left',
     transition: 'background-color 0.15s',
-  },
-  saveBtn: {
-    backgroundColor: '#10B981',
-    color: '#FFFFFF',
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    fontSize: '13px',
-    lineHeight: '18px',
-    fontWeight: 500,
-    border: 'none',
-    borderRadius: '6px',
-    padding: '8px 16px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
-    transition: 'opacity 0.15s',
   },
 };
