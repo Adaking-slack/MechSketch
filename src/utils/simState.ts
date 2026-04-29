@@ -29,6 +29,8 @@ export interface SimState {
   executionState: ExecutionState;
   // World-space target for the gripper end-effector — drives IK on rigged arms.
   gripperGoal?: SimPosition;
+  // Gripper jaw openness: 1 = fully open, 0 = closed around object.
+  gripperOpenness?: number;
 }
 
 export const SIM_STORAGE_KEY = 'mechsketch_sim_state';
@@ -86,6 +88,7 @@ export function initSimState(objects: PlacedObject[], targets: Target[]): SimSta
     isPlaying: false,
     message: null,
     executionState: 'idle',
+    gripperOpenness: 1,
   };
 }
 

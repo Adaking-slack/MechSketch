@@ -57,9 +57,14 @@ export default function Home() {
   const simulationRef = useRef<{ running: boolean; timeout: ReturnType<typeof setTimeout> | null; blockIndex: number; phaseTimeouts: ReturnType<typeof setTimeout>[] }>({ running: false, timeout: null, blockIndex: 0, phaseTimeouts: [] });
   const pendingPickObjectIdRef = useRef<string | null>(null);
   const pendingPlacementRef = useRef<{ objectId: string; position: { x: number; y: number; z: number }; targetId: string | null } | null>(null);
-  // Time the arm gets to reach a goal before grip/release commits.
+  // Pick/place phase timing. Each block runs for APPROACH_MS + POST_ACTION_MS
+  // and is split into approach-above → descend → grip/release → retract.
   const APPROACH_MS = 2200;
-  const POST_ACTION_MS = 700; // small tail after grip/release before next block
+  const POST_ACTION_MS = 700;
+  const HOVER_HEIGHT = 0.30;       // how high above the object/target to stage
+  const DESCEND_MS = 900;          // when to switch from above → grip pose
+  const COMMIT_MS = 1700;          // when grip/release attaches/detaches
+  const RETRACT_MS = 2000;         // when to lift back to hover height
 
   useEffect(() => {
     latestSimStateRef.current = simState;
@@ -86,6 +91,25 @@ export default function Home() {
       return next;
     });
   }, []);
+
+  // Schedule a delayed gripper-goal update during a pick/place phase.
+  // Lets us stage approach → descend → retract without one abrupt jump per block.
+  const scheduleGoal = useCallback((delayMs: number, goal: { x: number; y: number; z: number }) => {
+    const t = setTimeout(() => {
+      if (!simulationRef.current.running) return;
+      setSimStateTracked(s => s ? { ...s, gripperGoal: goal } : s);
+    }, delayMs);
+    simulationRef.current.phaseTimeouts.push(t);
+  }, [setSimStateTracked]);
+
+  // Schedule a delayed gripper open/close (1 = open, 0 = closed).
+  const scheduleOpenness = useCallback((delayMs: number, openness: number) => {
+    const t = setTimeout(() => {
+      if (!simulationRef.current.running) return;
+      setSimStateTracked(s => s ? { ...s, gripperOpenness: openness } : s);
+    }, delayMs);
+    simulationRef.current.phaseTimeouts.push(t);
+  }, [setSimStateTracked]);
 
   const persistPlacedObject = useCallback((objectId: string, position: { x: number; y: number; z: number }) => {
     setObjectState(prev => {
@@ -317,8 +341,14 @@ export default function Home() {
                 }
                 if (objToPick) {
                   pendingPickObjectIdRef.current = objToPick.id;
-                  nextState.gripperGoal = { x: objToPick.position.x, y: objToPick.position.y + 0.05, z: objToPick.position.z };
+                  const above = { x: objToPick.position.x, y: objToPick.position.y + HOVER_HEIGHT, z: objToPick.position.z };
+                  const grip = { x: objToPick.position.x, y: objToPick.position.y + 0.05, z: objToPick.position.z };
+                  nextState.gripperGoal = above;
+                  nextState.gripperOpenness = 1;
                   nextState.message = `Reaching for ${objToPick.id}`;
+                  scheduleGoal(DESCEND_MS, grip);
+                  scheduleOpenness(COMMIT_MS, 0);
+                  scheduleGoal(RETRACT_MS, above);
                   const objId = objToPick.id;
                   const t = setTimeout(() => {
                     if (!simulationRef.current.running) return;
@@ -334,7 +364,7 @@ export default function Home() {
                         message: `Picked ${objId}`,
                       };
                     });
-                  }, APPROACH_MS);
+                  }, COMMIT_MS);
                   simulationRef.current.phaseTimeouts.push(t);
                 } else {
                   pendingPickObjectIdRef.current = null;
@@ -352,8 +382,14 @@ export default function Home() {
                 if (heldObj && target) {
                   const placementY = target.type === 'zone' ? target.position.y + 0.20 : target.position.y + 0.05;
                   const placementPos = { x: target.position.x, y: placementY, z: target.position.z };
-                  nextState.gripperGoal = placementPos;
+                  const aboveTarget = { x: placementPos.x, y: placementPos.y + HOVER_HEIGHT, z: placementPos.z };
+                  nextState.gripperGoal = aboveTarget;
+                  nextState.gripperOpenness = 0;
                   nextState.message = `Placing at ${target.name}`;
+                  // Hover above → descend → release. Arm holds at the target so
+                  // the sim ends with the gripper open at placement.
+                  scheduleGoal(DESCEND_MS, placementPos);
+                  scheduleOpenness(COMMIT_MS, 1);
 
                   const heldId = heldObj.id;
                   const targetId = target.id;
@@ -373,7 +409,7 @@ export default function Home() {
                         message: `Placed at ${targetName}`,
                       };
                     });
-                  }, APPROACH_MS);
+                  }, COMMIT_MS);
                   simulationRef.current.phaseTimeouts.push(t);
                 } else if (heldObj) {
                   const heldId = heldObj.id;
@@ -394,7 +430,7 @@ export default function Home() {
                         message: 'Placed object',
                       };
                     });
-                  }, APPROACH_MS);
+                  }, COMMIT_MS);
                   simulationRef.current.phaseTimeouts.push(t);
                   nextState.message = 'Placing object';
                 } else {
@@ -562,10 +598,15 @@ export default function Home() {
 
             if (objToPick) {
               pendingPickObjectIdRef.current = objToPick.id;
-              // Phase 1: only set the gripper goal so the arm reaches toward the box.
-              // The box stays still — we attach it after the arm arrives.
-              nextState.gripperGoal = { x: objToPick.position.x, y: objToPick.position.y + 0.05, z: objToPick.position.z };
+              // Stage the pick: hover above → descend → close jaws → retract back up.
+              const above = { x: objToPick.position.x, y: objToPick.position.y + HOVER_HEIGHT, z: objToPick.position.z };
+              const grip = { x: objToPick.position.x, y: objToPick.position.y + 0.05, z: objToPick.position.z };
+              nextState.gripperGoal = above;
+              nextState.gripperOpenness = 1;
               nextState.message = `Reaching for ${objToPick.id}`;
+              scheduleGoal(DESCEND_MS, grip);
+              scheduleOpenness(COMMIT_MS, 0);
+              scheduleGoal(RETRACT_MS, above);
 
               const objId = objToPick.id;
               const t = setTimeout(() => {
@@ -582,7 +623,7 @@ export default function Home() {
                     message: `Picked ${objId}`,
                   };
                 });
-              }, APPROACH_MS);
+              }, COMMIT_MS);
               simulationRef.current.phaseTimeouts.push(t);
             } else {
               pendingPickObjectIdRef.current = null;
@@ -598,12 +639,17 @@ export default function Home() {
             }
 
             if (heldObj && target) {
-              // Phase 1: set the gripper goal to the placement spot. The held box rides the gripper
-              // through IK because state stays 'held' until the arm arrives.
+              // Stage the place: hover above target → descend → open jaws (release).
+              // No retract — the arm holds at the target so the sim ends with
+              // the gripper open at placement.
               const placementY = target.type === 'zone' ? target.position.y + 0.20 : target.position.y + 0.05;
               const placementPos = { x: target.position.x, y: placementY, z: target.position.z };
-              nextState.gripperGoal = placementPos;
+              const aboveTarget = { x: placementPos.x, y: placementPos.y + HOVER_HEIGHT, z: placementPos.z };
+              nextState.gripperGoal = aboveTarget;
+              nextState.gripperOpenness = 0;
               nextState.message = `Placing at ${target.name}`;
+              scheduleGoal(DESCEND_MS, placementPos);
+              scheduleOpenness(COMMIT_MS, 1);
 
               const heldId = heldObj.id;
               const targetId = target.id;
@@ -623,7 +669,7 @@ export default function Home() {
                     message: `Placed at ${targetName}`,
                   };
                 });
-              }, APPROACH_MS);
+              }, COMMIT_MS);
               simulationRef.current.phaseTimeouts.push(t);
             } else if (heldObj) {
               // No target specified — drop where the gripper currently is.
@@ -646,7 +692,7 @@ export default function Home() {
                     message: 'Placed object',
                   };
                 });
-              }, APPROACH_MS);
+              }, COMMIT_MS);
               simulationRef.current.phaseTimeouts.push(t);
               nextState.message = 'Placing object';
             } else {
@@ -1079,7 +1125,7 @@ simulationRef.current.blockIndex++;
         <main style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 0, margin: '16px', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#f0f2f5', backgroundImage: 'linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
           {selectedRobot ? (
             <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-<WorkspaceCanvas robotModelUrl={selectedRobot.model} simulationMode={simulationMode} simulationPaused={simulationPaused} simState={simState} targets={targets}>
+<WorkspaceCanvas robotModelUrl={selectedRobot.model} simulationMode={simulationMode} simulationPaused={simulationPaused} simState={simState} targets={targets} placedObjects={objectState.objects}>
                 {simulationMode && targets.length > 0 && (
                   <TargetViewer targets={targets} selectedTargetId={null} onTargetSelect={() => {}} newlyAddedTargetId={null} />
                 )}
