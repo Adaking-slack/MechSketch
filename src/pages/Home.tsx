@@ -58,13 +58,27 @@ export default function Home() {
   const pendingPickObjectIdRef = useRef<string | null>(null);
   const pendingPlacementRef = useRef<{ objectId: string; position: { x: number; y: number; z: number }; targetId: string | null } | null>(null);
   // Pick/place phase timing. Each block runs for APPROACH_MS + POST_ACTION_MS
-  // and is split into approach-above → descend → grip/release → retract.
-  const APPROACH_MS = 2200;
-  const POST_ACTION_MS = 700;
+  // and is split into approach-above → descend → settle → grip/release →
+  // settle → retract. Timings are tuned so the eased IK trajectory in
+  // WorkspaceCanvas reaches each waypoint and visibly comes to rest before
+  // the next event fires — this is what gives the motion its fluid,
+  // pause-and-resume feel.
+  // Phase timings are picked so each event fires only after the previous
+  // motion has demonstrably finished, given the worst-case trajectory time
+  // (~1.7s, see TRAJ_MAX_MS in WorkspaceCanvas) and jaw-close time (~450ms,
+  // JAW_LERP_RATE). Order: arm approaches above → descend to grip → motion
+  // settles → jaws close → object attaches → brief settle → retract.
+  const APPROACH_MS = 6500;
+  // POST_ACTION_MS is the dwell after RETRACT_MS before the next block runs.
+  // It must be long enough for the retract trajectory (~1.1s at 25cm) to
+  // fully complete — otherwise the canvas tear-down at sequence-end clips
+  // the final motion and the placement looks unfinished.
+  const POST_ACTION_MS = 1600;
   const HOVER_HEIGHT = 0.30;       // how high above the object/target to stage
-  const DESCEND_MS = 900;          // when to switch from above → grip pose
-  const COMMIT_MS = 1700;          // when grip/release attaches/detaches
-  const RETRACT_MS = 2000;         // when to lift back to hover height
+  const DESCEND_MS = 2500;         // switch from above → grip pose (after approach finishes)
+  const COMMIT_MS = 4100;          // close/open jaws after the descend has settled
+  const ATTACH_MS = 4600;          // attach/detach object after jaws have fully closed/opened
+  const RETRACT_MS = 4900;         // lift back to hover height after a brief grip settle
 
   useEffect(() => {
     latestSimStateRef.current = simState;
@@ -350,6 +364,7 @@ export default function Home() {
                   scheduleOpenness(COMMIT_MS, 0);
                   scheduleGoal(RETRACT_MS, above);
                   const objId = objToPick.id;
+                  // Delay object attachment by 200ms to allow jaw animation to stabilize
                   const t = setTimeout(() => {
                     if (!simulationRef.current.running) return;
                     setSimStateTracked(s => {
@@ -364,7 +379,7 @@ export default function Home() {
                         message: `Picked ${objId}`,
                       };
                     });
-                  }, COMMIT_MS);
+                  }, ATTACH_MS);
                   simulationRef.current.phaseTimeouts.push(t);
                 } else {
                   pendingPickObjectIdRef.current = null;
@@ -386,10 +401,13 @@ export default function Home() {
                   nextState.gripperGoal = aboveTarget;
                   nextState.gripperOpenness = 0;
                   nextState.message = `Placing at ${target.name}`;
-                  // Hover above → descend → release. Arm holds at the target so
-                  // the sim ends with the gripper open at placement.
+                  // Hover above → descend → release → lift back to hover so
+                  // the placement reads as a deliberate, completed action
+                  // (otherwise the arm just sits at the target until tear-down
+                  // and the release isn't visually clear).
                   scheduleGoal(DESCEND_MS, placementPos);
                   scheduleOpenness(COMMIT_MS, 1);
+                  scheduleGoal(RETRACT_MS, aboveTarget);
 
                   const heldId = heldObj.id;
                   const targetId = target.id;
@@ -409,7 +427,7 @@ export default function Home() {
                         message: `Placed at ${targetName}`,
                       };
                     });
-                  }, COMMIT_MS);
+                  }, ATTACH_MS);
                   simulationRef.current.phaseTimeouts.push(t);
                 } else if (heldObj) {
                   const heldId = heldObj.id;
@@ -430,7 +448,7 @@ export default function Home() {
                         message: 'Placed object',
                       };
                     });
-                  }, COMMIT_MS);
+                  }, ATTACH_MS);
                   simulationRef.current.phaseTimeouts.push(t);
                   nextState.message = 'Placing object';
                 } else {
@@ -441,9 +459,25 @@ export default function Home() {
               }
               case 'rotate': {
                 const angle = block.params?.angle || 90;
-                nextState.robotRotation = (nextState.robotRotation || 0) + (angle * Math.PI / 180);
+                const radians = angle * Math.PI / 180;
+                nextState.robotRotation = (nextState.robotRotation || 0) + radians;
+                // Rotate the gripper goal around the robot's vertical axis by
+                // the same angle so the arm sweeps as a rigid unit. Without
+                // this, the IK keeps the tip at a fixed world point and the
+                // bones contort to cancel the base rotation — looks static.
+                if (nextState.gripperGoal) {
+                  const cos = Math.cos(radians);
+                  const sin = Math.sin(radians);
+                  const x = nextState.gripperGoal.x;
+                  const z = nextState.gripperGoal.z;
+                  nextState.gripperGoal = {
+                    x: x * cos + z * sin,
+                    y: nextState.gripperGoal.y,
+                    z: -x * sin + z * cos,
+                  };
+                }
                 nextState.message = `Rotating ${angle}°`;
-                delay = 1000;
+                delay = 2200;
                 break;
               }
               case 'wait': {
@@ -490,8 +524,6 @@ export default function Home() {
         for (const t of simulationRef.current.phaseTimeouts) clearTimeout(t);
         simulationRef.current.phaseTimeouts = [];
         simulationRef.current.running = false;
-        setSimulationMode(false);
-        setSimulationPaused(false);
         setSimulationCompleted(true);
         setActiveBlockId(null);
         setSimMessage('Simulation complete');
@@ -501,7 +533,17 @@ export default function Home() {
           commitSimObjectsToObjectState(finalState);
         }
 
-        setSimState(null);
+        // Hold the simulated arm and objects on screen briefly so the final
+        // motion (e.g. release-and-lift on a place block) is visible. Without
+        // this dwell, setSimState(null) unmounts SimulatedRobot/Object the
+        // instant the last block's delay elapses, clipping the placement.
+        const SETTLE_MS = 1500;
+        const settleTimeout = setTimeout(() => {
+          setSimulationMode(false);
+          setSimulationPaused(false);
+          setSimState(null);
+        }, SETTLE_MS);
+        simulationRef.current.phaseTimeouts.push(settleTimeout);
         return;
       }
 
@@ -609,6 +651,8 @@ export default function Home() {
               scheduleGoal(RETRACT_MS, above);
 
               const objId = objToPick.id;
+              // Delay object attachment by 200ms to allow jaw animation to stabilize
+              // before object starts following gripper (prevents jerky attachment)
               const t = setTimeout(() => {
                 if (!simulationRef.current.running) return;
                 setSimStateTracked(s => {
@@ -623,7 +667,7 @@ export default function Home() {
                     message: `Picked ${objId}`,
                   };
                 });
-              }, COMMIT_MS);
+              }, ATTACH_MS);
               simulationRef.current.phaseTimeouts.push(t);
             } else {
               pendingPickObjectIdRef.current = null;
@@ -648,13 +692,17 @@ export default function Home() {
               nextState.gripperGoal = aboveTarget;
               nextState.gripperOpenness = 0;
               nextState.message = `Placing at ${target.name}`;
+              // Hover above → descend → release → lift back to hover so the
+              // placement reads as a deliberate, completed action.
               scheduleGoal(DESCEND_MS, placementPos);
               scheduleOpenness(COMMIT_MS, 1);
+              scheduleGoal(RETRACT_MS, aboveTarget);
 
               const heldId = heldObj.id;
               const targetId = target.id;
               const targetName = target.name;
               pendingPlacementRef.current = { objectId: heldId, position: placementPos, targetId };
+              // Delay object release by 200ms to allow jaw animation to stabilize
               const t = setTimeout(() => {
                 if (!simulationRef.current.running) return;
                 setSimStateTracked(s => {
@@ -669,13 +717,14 @@ export default function Home() {
                     message: `Placed at ${targetName}`,
                   };
                 });
-              }, COMMIT_MS);
+              }, ATTACH_MS);
               simulationRef.current.phaseTimeouts.push(t);
             } else if (heldObj) {
               // No target specified — drop where the gripper currently is.
               const heldId = heldObj.id;
               const dropPreview = nextState.gripperGoal ? { ...nextState.gripperGoal } : heldObj.position;
               pendingPlacementRef.current = { objectId: heldId, position: dropPreview, targetId: null };
+              // Delay object release by 200ms to allow jaw animation to stabilize
               const t = setTimeout(() => {
                 if (!simulationRef.current.running) return;
                 setSimStateTracked(s => {
@@ -692,7 +741,7 @@ export default function Home() {
                     message: 'Placed object',
                   };
                 });
-              }, COMMIT_MS);
+              }, ATTACH_MS);
               simulationRef.current.phaseTimeouts.push(t);
               nextState.message = 'Placing object';
             } else {
@@ -703,9 +752,24 @@ export default function Home() {
           }
           case 'rotate': {
             const angle = block.params?.angle || 90;
-            nextState.robotRotation = (nextState.robotRotation || 0) + (angle * Math.PI / 180);
+            const radians = angle * Math.PI / 180;
+            nextState.robotRotation = (nextState.robotRotation || 0) + radians;
+            // Rotate the gripper goal around the robot's vertical axis so the
+            // arm sweeps as a rigid unit instead of having the IK contort to
+            // keep the tip at a fixed world point.
+            if (nextState.gripperGoal) {
+              const cos = Math.cos(radians);
+              const sin = Math.sin(radians);
+              const x = nextState.gripperGoal.x;
+              const z = nextState.gripperGoal.z;
+              nextState.gripperGoal = {
+                x: x * cos + z * sin,
+                y: nextState.gripperGoal.y,
+                z: -x * sin + z * cos,
+              };
+            }
             nextState.message = `Rotating ${angle}°`;
-            delay = 1000;
+            delay = 2200;
             break;
           }
           case 'wait': {

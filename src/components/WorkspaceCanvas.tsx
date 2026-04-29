@@ -50,9 +50,28 @@ function Model({ url, position }: { url: string; position?: [number, number, num
 
 // Fallback offset used only if the GLB has no recognizable gripper bone
 const GRIPPER_FALLBACK_OFFSET = new THREE.Vector3(0, 0.5, 0);
-const GOAL_LERP_RATE = 1.8; // gripper goal smoothing — lower = gentler motion
-const CCD_ITERATIONS = 6;
-const CCD_MAX_STEP_RAD = 0.18; // damp per-bone rotation per CCD step to avoid flips
+// Trapezoidal-velocity tuning. Each new gripper goal generates a trajectory
+// whose duration scales with travel distance; the velocity profile ramps up
+// briefly, cruises at constant speed, then ramps down — like real robot
+// motion. Avoids the "accelerating toward the target" look that pure
+// smoothstep produces over long distances.
+const TRAJ_BASE_MS = 700;
+const TRAJ_PER_METER_MS = 1500;
+const TRAJ_MIN_MS = 500;
+const TRAJ_MAX_MS = 2400;
+// Absolute (not fractional) ramp times. With these values, even a long
+// trajectory spends only ~80ms accelerating from rest — the arm reads as
+// moving at constant cruise speed almost immediately. The longer ramp-out
+// gives a visibly soft landing at every waypoint.
+const RAMP_IN_MS = 80;
+const RAMP_OUT_MS = 350;
+// New goals within this radius of the current goal are treated as no-ops to
+// avoid restarting the trajectory on tiny upstream jitter.
+const GOAL_EPSILON = 0.005;
+const CCD_ITERATIONS = 9;
+// Bound bone angular speed (rad/sec) so motion is frame-rate independent and
+// reads as smooth rather than as discrete per-frame steps.
+const MAX_BONE_RAD_PER_SEC = 1.6;
 
 // End-effector and IK chain names for Robotik-arm.glb.
 // Chain is ordered root→tip; CCD iterates tip→root each pass.
@@ -75,10 +94,10 @@ const JAW_A_MESH_NAMES = ['Cube.005'];
 const JAW_B_MESH_NAMES = ['Cube.004'];
 const JAW_AXIS = new THREE.Vector3(1, 0, 0);
 const JAW_CLOSE_DELTA = 0.30; // rad — extra rotation from rest pose to closed
-const JAW_LERP_RATE = 5.0;
+const JAW_LERP_RATE = 2.2; // visibly slower jaw motion — reads like a deliberate grip
 // Toggle to render a small marker at the resolved attach point. Useful for
 // verifying that held objects land between the jaws, not at the wrist.
-const DEBUG_ATTACH = true;
+const DEBUG_ATTACH = false;
 const IK_CHAIN_NAMES = [
   'Bone.001',
   'Bone001',
@@ -115,8 +134,12 @@ const _qDelta = new THREE.Quaternion();
 const _qJawTarget = new THREE.Quaternion();
 const _qJawDelta = new THREE.Quaternion();
 
-function solveCCD(chain: THREE.Object3D[], end: THREE.Object3D, goal: THREE.Vector3) {
+function solveCCD(chain: THREE.Object3D[], end: THREE.Object3D, goal: THREE.Vector3, delta: number) {
   if (chain.length === 0) return;
+  // Per-iteration angular cap derived from a frame-rate-independent angular
+  // velocity budget. Total max rotation per bone per frame is bounded by
+  // MAX_BONE_RAD_PER_SEC * delta across all CCD iterations.
+  const stepCap = (MAX_BONE_RAD_PER_SEC * delta) / CCD_ITERATIONS;
   for (let iter = 0; iter < CCD_ITERATIONS; iter++) {
     for (let i = chain.length - 1; i >= 0; i--) {
       const bone = chain[i];
@@ -141,7 +164,7 @@ function solveCCD(chain: THREE.Object3D[], end: THREE.Object3D, goal: THREE.Vect
       if (_vAxis.lengthSq() < 1e-8) continue;
       _vAxis.normalize();
 
-      const stepAngle = Math.min(angle, CCD_MAX_STEP_RAD);
+      const stepAngle = Math.min(angle, stepCap);
       _qWorld.setFromAxisAngle(_vAxis, stepAngle);
 
       // Convert world-space delta into the bone's local-rotation premultiplier:
@@ -256,8 +279,31 @@ function SimulatedRobot({ robotModelUrl, robotRotation, gripperGoal, gripperOpen
   const jawARef = useRef<THREE.Object3D | null>(null);
   const jawBRef = useRef<THREE.Object3D | null>(null);
 
-  // Smoothed gripper goal (world-space) for visible motion between waypoints
-  const currentGoal = useRef<THREE.Vector3 | null>(null);
+  // Eased trajectory between waypoints. When a new gripperGoal arrives that
+  // differs from `end`, we snapshot the live position as `start`, set a new
+  // `end`, and reset `t0`. Each frame we sample with smoothstep easing so the
+  // arm always starts and stops with zero velocity — produces fluid motion
+  // and an implicit pause at every waypoint.
+  const traj = useRef<{
+    start: THREE.Vector3;
+    end: THREE.Vector3;
+    t0: number;
+    duration: number;
+    current: THREE.Vector3;
+  } | null>(null);
+  // Same trapezoidal-ease pattern applied to base rotation so `rotate` blocks
+  // sweep visibly instead of snapping.
+  const rotTraj = useRef<{
+    start: number;
+    end: number;
+    t0: number;
+    duration: number;
+    current: number;
+  } | null>(null);
+  const ROT_BASE_MS = 600;
+  const ROT_PER_RAD_MS = 700;
+  const ROT_MIN_MS = 500;
+  const ROT_MAX_MS = 2000;
   // Cached rest rotations of the jaw bones — captured once so we can layer
   // the open/close delta on top of the model's natural rest pose.
   const restRotA = useRef<THREE.Quaternion | null>(null);
@@ -286,7 +332,8 @@ function SimulatedRobot({ robotModelUrl, robotRotation, gripperGoal, gripperOpen
     restRotB.current = rig.jawB ? rig.jawB.quaternion.clone() : null;
     // Reset cached state derived from the previous clone, if any.
     attachLocalOffset.current = null;
-    currentGoal.current = null;
+    traj.current = null;
+    rotTraj.current = null;
 
     return () => {
       inner.remove(cloned);
@@ -307,6 +354,7 @@ function SimulatedRobot({ robotModelUrl, robotRotation, gripperGoal, gripperOpen
       restRotA.current = null;
       restRotB.current = null;
       attachLocalOffset.current = null;
+      traj.current = null;
     };
   }, [scene]);
 
@@ -371,6 +419,52 @@ function SimulatedRobot({ robotModelUrl, robotRotation, gripperGoal, gripperOpen
       return;
     }
 
+    // Smooth base rotation. Same trapezoidal pattern as the position
+    // trajectory: short ramp-in, cruise at constant angular speed, soft
+    // ramp-out so the rotation visibly settles.
+    {
+      const now = performance.now();
+      if (!rotTraj.current) {
+        rotTraj.current = {
+          start: robotRotation,
+          end: robotRotation,
+          t0: now,
+          duration: ROT_MIN_MS,
+          current: robotRotation,
+        };
+      } else if (Math.abs(rotTraj.current.end - robotRotation) > 1e-4) {
+        const angleDelta = Math.abs(robotRotation - rotTraj.current.current);
+        const duration = THREE.MathUtils.clamp(
+          ROT_BASE_MS + angleDelta * ROT_PER_RAD_MS,
+          ROT_MIN_MS,
+          ROT_MAX_MS
+        );
+        rotTraj.current.start = rotTraj.current.current;
+        rotTraj.current.end = robotRotation;
+        rotTraj.current.t0 = now;
+        rotTraj.current.duration = duration;
+      }
+      const D = rotTraj.current.duration;
+      const tIn = Math.min(RAMP_IN_MS, D * 0.4);
+      const tOut = Math.min(RAMP_OUT_MS, D * 0.5);
+      const tCruise = Math.max(0, D - tIn - tOut);
+      const totalArea = tCruise + (tIn + tOut) / 2;
+      const vCruise = totalArea > 1e-6 ? 1 / totalArea : 0;
+      const t = THREE.MathUtils.clamp(now - rotTraj.current.t0, 0, D);
+      let eased: number;
+      if (t < tIn) {
+        eased = (0.5 * vCruise * t * t) / Math.max(tIn, 1e-6);
+      } else if (t < tIn + tCruise) {
+        eased = vCruise * (tIn / 2 + (t - tIn));
+      } else {
+        const tau = t - tIn - tCruise;
+        eased = vCruise * (tIn / 2 + tCruise + tau - (0.5 * tau * tau) / Math.max(tOut, 1e-6));
+      }
+      rotTraj.current.current =
+        rotTraj.current.start + (rotTraj.current.end - rotTraj.current.start) * eased;
+      groupRef.current.rotation.y = rotTraj.current.current;
+    }
+
     groupRef.current.position.set(0, 0, 0);
 
     // Drive jaw open/close BEFORE IK so the attach point reflects the new pose.
@@ -388,30 +482,101 @@ function SimulatedRobot({ robotModelUrl, robotRotation, gripperGoal, gripperOpen
       jawB.quaternion.slerp(_qJawTarget, jawFactor);
     }
 
-    // Lerp the smoothed gripper goal toward the requested goal. First-frame
-    // init from the live attach point avoids a snap from the rest pose.
+    // Detect whether a base rotation is currently in flight. While rotating,
+    // the arm is treated as a rigid body — the base group spins, joint angles
+    // freeze, and the gripper attach point naturally arcs through world space.
+    // This is what makes a `rotate` block visibly sweep the held object
+    // around the vertical axis instead of contorting the bones to keep the
+    // tip planted at a fixed world point.
+    const nowMs = performance.now();
+    const rotating = !!rotTraj.current
+      && Math.abs(rotTraj.current.end - rotTraj.current.start) > 1e-4
+      && (nowMs - rotTraj.current.t0) < rotTraj.current.duration;
+
+    // Eased trajectory: when a new goal arrives, snapshot the live position as
+    // the trajectory start and ease toward the new end over a distance-scaled
+    // duration. Result is zero velocity at both endpoints, so every waypoint
+    // is naturally a brief settle — including the grip pose the scheduler
+    // holds the arm at while the jaws close.
     if (gripperGoal) {
-      if (!currentGoal.current) {
-        currentGoal.current = new THREE.Vector3();
-        if (computeAttachWorld(_vAttach)) {
-          currentGoal.current.copy(_vAttach);
+      const goalVec = _vToGoal.set(gripperGoal.x, gripperGoal.y, gripperGoal.z);
+
+      if (!traj.current) {
+        const startVec = new THREE.Vector3();
+        if (!computeAttachWorld(startVec)) startVec.copy(goalVec);
+        traj.current = {
+          start: startVec.clone(),
+          end: goalVec.clone(),
+          t0: nowMs,
+          duration: TRAJ_MIN_MS,
+          current: startVec.clone(),
+        };
+      } else if (traj.current.end.distanceTo(goalVec) > GOAL_EPSILON) {
+        // Snapshot whatever the trajectory is currently outputting as the new
+        // start — guarantees no positional discontinuity, even mid-flight.
+        // During a rotation, snap start/current to the live attach point so
+        // the position trajectory tracks the arm's rigid-body sweep instead
+        // of trying to lerp through a chord.
+        if (rotating) {
+          const live = computeAttachWorld(_vAttach) ? _vAttach : traj.current.current;
+          traj.current.start.copy(live);
+          traj.current.current.copy(live);
+        } else {
+          traj.current.start.copy(traj.current.current);
         }
+        traj.current.end.copy(goalVec);
+        traj.current.t0 = nowMs;
+        const dist = traj.current.start.distanceTo(goalVec);
+        traj.current.duration = THREE.MathUtils.clamp(
+          TRAJ_BASE_MS + dist * TRAJ_PER_METER_MS,
+          TRAJ_MIN_MS,
+          TRAJ_MAX_MS
+        );
       }
-      const goalFactor = Math.min(delta * GOAL_LERP_RATE, 1);
-      currentGoal.current.lerp(
-        _vToGoal.set(gripperGoal.x, gripperGoal.y, gripperGoal.z),
-        goalFactor
-      );
+
+      if (rotating) {
+        // Rigid-body rotation in progress. Skip the position interpolation;
+        // sync the trajectory output to the live attach point so when the
+        // rotation ends, the next position update starts from the right place.
+        if (computeAttachWorld(_vAttach)) {
+          traj.current.current.copy(_vAttach);
+          traj.current.start.copy(_vAttach);
+          traj.current.t0 = nowMs;
+        }
+      } else {
+        // Trapezoidal velocity profile with absolute ramp times. Brief
+        // ramp-in (constant-speed entry), long cruise, soft ramp-out. Eased
+        // value goes from 0 at t=0 to 1 at t=duration.
+        const D = traj.current.duration;
+        const tIn = Math.min(RAMP_IN_MS, D * 0.4);
+        const tOut = Math.min(RAMP_OUT_MS, D * 0.5);
+        const tCruise = Math.max(0, D - tIn - tOut);
+        const totalArea = tCruise + (tIn + tOut) / 2;
+        const vCruise = totalArea > 1e-6 ? 1 / totalArea : 0;
+        const t = THREE.MathUtils.clamp(nowMs - traj.current.t0, 0, D);
+        let eased: number;
+        if (t < tIn) {
+          eased = (0.5 * vCruise * t * t) / Math.max(tIn, 1e-6);
+        } else if (t < tIn + tCruise) {
+          eased = vCruise * (tIn / 2 + (t - tIn));
+        } else {
+          const tau = t - tIn - tCruise;
+          eased = vCruise * (tIn / 2 + tCruise + tau - (0.5 * tau * tau) / Math.max(tOut, 1e-6));
+        }
+        traj.current.current.copy(traj.current.start).lerp(traj.current.end, eased);
+      }
     }
 
-    // Run CCD with a goal offset so the *attach point* reaches currentGoal,
-    // not the wrist bone (which sits behind the jaws).
-    if (endBone && ikChain.length > 0 && currentGoal.current) {
+    // Run CCD with a goal offset so the *attach point* reaches the eased goal,
+    // not the wrist bone (which sits behind the jaws). Skip during a rotation
+    // so the arm pose is preserved while the base sweeps — without this the
+    // bones would counter-rotate to keep the tip at a fixed world point.
+    if (!rotating && endBone && ikChain.length > 0 && traj.current) {
       computeAttachWorld(_vAttach);
       endBone.updateWorldMatrix(true, false);
       _vEndPos.setFromMatrixPosition(endBone.matrixWorld);
-      _vIkGoal.copy(currentGoal.current).add(_vEndPos).sub(_vAttach);
-      solveCCD(ikChain, endBone, _vIkGoal);
+      _vIkGoal.copy(traj.current.current).add(_vEndPos).sub(_vAttach);
+      solveCCD(ikChain, endBone, _vIkGoal, delta);
     }
 
     if (!computeAttachWorld(gripperWorldRef.current)) {
@@ -424,7 +589,7 @@ function SimulatedRobot({ robotModelUrl, robotRotation, gripperGoal, gripperOpen
   });
 
   return (
-    <group ref={groupRef} rotation={[0, robotRotation, 0]}>
+    <group ref={groupRef}>
       <Center>
         <group ref={innerRef} />
       </Center>
@@ -595,8 +760,9 @@ function SimulatedObject({ object, placed, held, gripperWorldRef, simulationPaus
     if (simulationPaused) return;
 
     if (held) {
-      // Track the live (animated) gripper position so the object hangs off the arm tip
-      groupRef.current.position.lerp(gripperWorldRef.current, Math.min(delta * 8, 1));
+      // Gripper world position is already smoothed by the eased IK trajectory,
+      // so the held object can copy directly without adding a second lerp.
+      groupRef.current.position.copy(gripperWorldRef.current);
     } else {
       tmpVec.current.set(object.position.x, object.position.y + objectYOffset, object.position.z);
       groupRef.current.position.lerp(tmpVec.current, Math.min(delta * 6, 1));
