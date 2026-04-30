@@ -65,13 +65,81 @@ const LayeredIsometricIcon = ({ icon: Icon, color }: { icon: any, color: string 
   );
 };
 
+const SimulationLines = () => {
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      overflow: 'hidden',
+      pointerEvents: 'none',
+      zIndex: 0,
+    }}>
+      <svg width="100%" height="100%" viewBox="0 0 1000 400" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <radialGradient id="fadeCenter" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
+            <stop offset="20%" stopColor="#ffffff" stopOpacity="0" />
+            <stop offset="70%" stopColor="#ffffff" stopOpacity="0" />
+            <stop offset="100%" stopColor="#ffffff" stopOpacity="1" />
+          </radialGradient>
+        </defs>
+
+        {/* Base Solid Lines */}
+        <g opacity="0.1">
+          {[...Array(24)].map((_, i) => {
+            const angle = (i * 15 * Math.PI) / 180;
+            return (
+              <line
+                key={`base-${i}`}
+                x1="500"
+                y1="200"
+                x2={500 + Math.cos(angle) * 800}
+                y2={200 + Math.sin(angle) * 800}
+                stroke="#003764"
+                strokeWidth="1"
+              />
+            );
+          })}
+        </g>
+
+        {/* Animated Dashed Lines (moving inwards) */}
+        {[...Array(24)].map((_, i) => {
+          const angle = (i * 15 * Math.PI) / 180;
+          return (
+            <motion.line
+              key={`dash-${i}`}
+              x1={500 + Math.cos(angle) * 800}
+              y1={200 + Math.sin(angle) * 800}
+              x2="500"
+              y2="200"
+              stroke="#003764"
+              strokeWidth="2"
+              strokeDasharray="8 60"
+              initial={{ strokeDashoffset: 68, opacity: 0 }}
+              animate={{ strokeDashoffset: 0, opacity: 0.3 }}
+              transition={{
+                opacity: { duration: 1.5, ease: "easeOut" },
+                strokeDashoffset: { duration: 2, repeat: Infinity, ease: "linear" }
+              }}
+            />
+          );
+        })}
+        <rect width="100%" height="100%" fill="url(#fadeCenter)" />
+      </svg>
+    </div>
+  );
+};
+
 export default function Landing() {
   const navigate = useNavigate();
 
   const sectionAnimation = {
     initial: { opacity: 0, y: 40 },
     whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true, margin: "-100px" },
+    viewport: { amount: 0.1 },
     transition: { duration: 0.7, ease: "easeOut" as const }
   };
 
@@ -79,7 +147,7 @@ export default function Landing() {
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', minHeight: '100vh', fontFamily: 'Helvetica Neue, -apple-system, sans-serif', overflowX: 'hidden' }}>
 
       {/* HERO SECTION */}
-      <div style={{ display: 'flex', width: '100%', minHeight: '100vh', maxWidth: '100vw', flexWrap: 'wrap' }}>
+      <motion.div {...sectionAnimation} style={{ display: 'flex', width: '100%', minHeight: '100vh', maxWidth: '100vw', flexWrap: 'wrap' }}>
 
         {/* LEFT SECTION (Dark Blue) */}
         <div style={{
@@ -244,7 +312,7 @@ export default function Landing() {
           </div>
 
         </div>
-      </div>
+      </motion.div>
 
       {/* PROBLEM SECTION */}
       <motion.div {...sectionAnimation} style={{
@@ -255,30 +323,54 @@ export default function Landing() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        textAlign: 'center'
       }}>
         <h2 style={{
-          fontSize: '32px',
-          lineHeight: '45px',
+          fontSize: '28px',
+          lineHeight: '39px',
           letterSpacing: '-0.01em',
           fontWeight: 500,
-          color: '#000000',
-          margin: '0 0 16px 0',
-          maxWidth: '720px'
+          color: '#001529',
+          margin: '0 0 48px 0',
+          textAlign: 'center'
         }}>
-          Robotic Workflow Design Is Too Complex
+          Robotic Workflow <br /> Design Is Too Complex
         </h2>
-        <p style={{
-          fontSize: '18px',
-          lineHeight: '25px',
-          letterSpacing: '-0.01em',
-          fontWeight: 400,
-          color: '#374049',
-          margin: 0,
-          maxWidth: '720px'
+
+        <div style={{
+          display: 'flex',
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'flex-start',
+          justifyContent: 'center',
+          gap: '40px',
+          maxWidth: '1000px',
+          width: '100%'
         }}>
-          Setting up robotic tasks often requires heavy coding, fragmented tools, and endless trial-and-error. From defining objects to mapping target zones, the process is slow, technical, and difficult to visualize.
-        </p>
+          <img
+            src="/landing-page/section-2.png"
+            alt="Team designing workflow"
+            style={{
+              flex: '1 1 400px',
+              maxWidth: '500px',
+              width: '100%',
+              height: '400px',
+              borderRadius: '16px',
+              objectFit: 'cover'
+            }}
+          />
+          <p style={{
+            flex: '1 1 400px',
+            fontSize: '18px',
+            lineHeight: '28px',
+            letterSpacing: '-0.01em',
+            fontWeight: 400,
+            color: '#374049',
+            margin: 0,
+            textAlign: 'left'
+          }}>
+            Setting up robotic tasks often requires heavy coding, fragmented tools, and endless trial-and-error. From defining objects to mapping target zones, the process is slow, technical, and difficult to visualize.
+          </p>
+        </div>
       </motion.div>
 
       {/* SOLUTION SECTION (Section 3) */}
@@ -287,58 +379,87 @@ export default function Landing() {
         backgroundColor: '#FFFFFF',
         padding: '82px 24px',
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        textAlign: 'center'
+        justifyContent: 'center'
       }}>
-
-        {/* Heading */}
-        <h2 style={{
-          fontSize: '32px',
-          lineHeight: '45px',
-          letterSpacing: '-0.01em',
-          fontWeight: 500,
-          color: '#000000',
-          margin: '0 0 16px 0',
-          maxWidth: '800px'
-        }}>
-          A Visual Way to Build, Test, and Understand Robot Behavior
-        </h2>
-
-        {/* Description */}
-        <p style={{
-          fontSize: '18px',
-          lineHeight: '25px',
-          letterSpacing: '-0.01em',
-          fontWeight: 400,
-          color: '#374049',
-          margin: '0 0 40px 0',
-          maxWidth: '800px'
-        }}>
-          Our platform simplifies robotic workflow design into intuitive visual components. You can place objects, define targets, and simulate robot actions — all in one place.
-        </p>
-
-        {/* Image */}
         <div style={{
-          width: '100%',
-          maxWidth: '1000px',
-          marginBottom: '40px',
           display: 'flex',
-          justifyContent: 'center'
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '60px',
+          maxWidth: '1200px',
+          width: '100%'
         }}>
-          <img
-            src="/landing-page/section-3.png"
-            alt="Robot workflow canvas interface"
-            style={{
-              width: '100%',
-              height: 'auto',
-              boxShadow: '0px 10px 30px rgba(0, 0, 0, 0.05)',
-              borderRadius: '8px',
-              border: '1px solid #EAEAEA'
-            }}
-          />
-        </div>
+          {/* Image Left */}
+          <div style={{
+            flex: '1 1 500px',
+            display: 'flex',
+            justifyContent: 'center'
+          }}>
+            <img
+              src="/landing-page/section-3.png"
+              alt="Robot workflow canvas interface"
+              style={{
+                width: '100%',
+                height: 'auto',
+                boxShadow: '0px 10px 30px rgba(0, 0, 0, 0.05)',
+                borderRadius: '8px',
+                border: '1px solid #EAEAEA'
+              }}
+            />
+          </div>
 
+          {/* Text Right */}
+          <div style={{
+            flex: '1 1 400px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            textAlign: 'left'
+          }}>
+            <h2 style={{
+              fontSize: '28px',
+              lineHeight: '39px',
+              letterSpacing: '-0.01em',
+              fontWeight: 500,
+              color: '#001529',
+              margin: '0 0 16px 0'
+            }}>
+              A Visual Way to Build, Test, and <br /> Understand Robot Behavior
+            </h2>
+            <p style={{
+              fontSize: '18px',
+              lineHeight: '25px',
+              letterSpacing: '-0.01em',
+              fontWeight: 400,
+              color: '#374049',
+              margin: '0 0 32px 0'
+            }}>
+              Our platform simplifies robotic workflow design into an intuitive visual experience. You can place objects, define targets, and simulate real robot actions—all in one place.
+            </p>
+            <button
+              onClick={() => navigate('/auth?view=signup')}
+              style={{
+                backgroundColor: '#003764',
+                color: '#ECF5FE',
+                fontSize: '15px',
+                fontWeight: 500,
+                lineHeight: '23px',
+                padding: '12px 24px',
+                width: '100%',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'opacity 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+            >
+              Get started
+            </button>
+          </div>
+        </div>
       </motion.div>
 
       {/* FEATURE GRID SECTION (Section 4) */}
@@ -353,11 +474,11 @@ export default function Landing() {
       }}>
         {/* Heading */}
         <h2 id="features" style={{
-          fontSize: '32px',
-          lineHeight: '45px',
+          fontSize: '28px',
+          lineHeight: '39px',
           letterSpacing: '0',
           fontWeight: 500,
-          color: '#000000',
+          color: '#001529',
           margin: '0 0 16px 0',
           maxWidth: '800px'
         }}>
@@ -507,11 +628,11 @@ export default function Landing() {
           {/* Left Side */}
           <div style={{ flex: '1 1 400px', paddingTop: '24px' }}>
             <h2 id="how-it-works" style={{
-              fontSize: '32px',
-              lineHeight: '45px',
+              fontSize: '28px',
+              lineHeight: '39px',
               letterSpacing: '-0.01em',
               fontWeight: 500,
-              color: '#000000',
+              color: '#001529',
               margin: '0 0 16px 0'
             }}>
               From Setup to Simulation in 5 Simple Steps
@@ -588,7 +709,7 @@ export default function Landing() {
       {/* USE CASES SECTION (Section 6) */}
       <motion.div {...sectionAnimation} style={{
         width: '100%',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F7F9F9',
         padding: '82px 24px',
         display: 'flex',
         flexDirection: 'column',
@@ -597,11 +718,11 @@ export default function Landing() {
       }}>
         {/* Heading */}
         <h2 style={{
-          fontSize: '32px',
-          lineHeight: '45px',
+          fontSize: '28px',
+          lineHeight: '39px',
           letterSpacing: '-0.01em',
           fontWeight: 500,
-          color: '#000000',
+          color: '#001529',
           margin: '0 0 16px 0',
           maxWidth: '800px'
         }}>
@@ -683,8 +804,8 @@ export default function Landing() {
       {/* FINAL CTA SECTION (Section 7) */}
       <motion.div {...sectionAnimation} style={{
         width: '100%',
-        backgroundColor: '#F8F9FA',
-        padding: '82px 24px',
+        backgroundColor: '#ffffff',
+        padding: '240px 24px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -692,13 +813,16 @@ export default function Landing() {
         position: 'relative',
         overflow: 'hidden'
       }}>
+        <SimulationLines />
         <h2 style={{
-          fontSize: '32px',
-          lineHeight: '45px',
+          fontSize: '28px',
+          lineHeight: '39px',
           letterSpacing: '-0.01em',
           fontWeight: 500,
-          color: '#000000',
-          margin: '0 0 16px 0'
+          color: '#001529',
+          margin: '0 0 16px 0',
+          position: 'relative',
+          zIndex: 1
         }}>
           Start Building Smarter Robot Workflows
         </h2>
@@ -707,7 +831,7 @@ export default function Landing() {
           fontSize: '18px',
           lineHeight: '25px',
           letterSpacing: '-0.01em',
-          fontWeight: 400,
+          fontWeight: 500,
           color: '#374049',
           margin: '0 0 32px 0',
           position: 'relative',
@@ -779,17 +903,17 @@ export default function Landing() {
 
             {/* Links */}
             <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
-              <a href="#" style={{ color: '#FFFFFF', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>Product</a>
-              <a href="#" style={{ color: '#FFFFFF', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>Feature</a>
-              <a href="#" style={{ color: '#FFFFFF', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>How it works</a>
-              <a href="#" style={{ color: '#FFFFFF', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>Usecase</a>
+              <a href="#" style={{ color: '#FFFFFF', textDecoration: 'none', fontSize: '15px', fontWeight: 400 }}>Product</a>
+              <a href="#" style={{ color: '#FFFFFF', textDecoration: 'none', fontSize: '15px', fontWeight: 400 }}>Feature</a>
+              <a href="#" style={{ color: '#FFFFFF', textDecoration: 'none', fontSize: '15px', fontWeight: 400 }}>How it works</a>
+              <a href="#" style={{ color: '#FFFFFF', textDecoration: 'none', fontSize: '15px', fontWeight: 400 }}>Usecase</a>
             </div>
 
             {/* Newsletter */}
             <div>
               <p style={{
                 fontSize: '14px',
-                fontWeight: 500,
+                fontWeight: 400,
                 color: '#FFFFFF',
                 margin: '0 0 8px 0'
               }}>
@@ -851,7 +975,7 @@ export default function Landing() {
 
         {/* Bottom Footer Part */}
         <div style={{
-          backgroundColor: '#003764',
+          backgroundColor: '#001529',
           padding: '24px 64px',
           display: 'flex',
           alignItems: 'center'

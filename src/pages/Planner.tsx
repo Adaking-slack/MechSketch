@@ -51,7 +51,7 @@ export default function Planner() {
       width: '100vw',
       backgroundColor: '#f7f8f9',
       position: 'relative',
-      fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
       overflowY: 'auto',
       overflowX: 'hidden'
     }}>
@@ -91,6 +91,14 @@ export default function Planner() {
         flexDirection: 'column'
       }}>
 
+        <style>{`
+          .project-name-input::placeholder {
+            color: #656768;
+            font-size: 13px;
+            line-height: 8px;
+          }
+        `}</style>
+
         {/* Top Centered Section */}
         <div style={{
           display: 'flex',
@@ -100,9 +108,10 @@ export default function Planner() {
           margin: '0 auto'
         }}>
           <h2 style={{
-            fontSize: '14px',
-            fontWeight: 600,
-            color: '#1a1a1a',
+            fontSize: '15px',
+            lineHeight: '23px',
+            fontWeight: 400,
+            color: '#001529',
             margin: '0 0 12px 0'
           }}>
             Input your project name
@@ -110,6 +119,8 @@ export default function Planner() {
 
           <input
             ref={inputRef}
+            placeholder="Untitled"
+            className="project-name-input"
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
             style={{
@@ -159,17 +170,17 @@ export default function Planner() {
           width: '100%',
           boxSizing: 'border-box'
         }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a', margin: '0 0 20px 0', letterSpacing: '-0.3px' }}>
+          <h3 style={{ fontSize: '18px', lineHeight: '25px', fontWeight: 500, color: '#374049', margin: '0 0 20px 0', letterSpacing: '-0.3px' }}>
             Recently saved
           </h3>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 260px)', gap: '24px 24px', paddingBottom: '20px', maxWidth: '1112px' }}>
-            {savedSimulations.length > 0 ? (
-              savedSimulations.map(sim => (
-                <div 
-                  key={sim.id} 
-                  style={{ 
-                    display: 'flex', 
+          {savedSimulations.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 260px)', gap: '24px 24px', paddingBottom: '20px', maxWidth: '1112px' }}>
+              {savedSimulations.map(sim => (
+                <div
+                  key={sim.id}
+                  style={{
+                    display: 'flex',
                     flexDirection: 'column',
                     cursor: 'pointer',
                     transition: 'transform 0.2s ease',
@@ -206,13 +217,20 @@ export default function Planner() {
                     {sim.name}
                   </div>
                 </div>
-              ))
-            ) : (
-              <div style={{ fontSize: '14px', color: '#718096' }}>
+              ))}
+            </div>
+          ) : (
+            <div style={{
+              width: '100%',
+              textAlign: 'center',
+              marginTop: '100px',
+              marginLeft: '-32px'
+            }}>
+              <span style={{ fontSize: '15px', lineHeight: '23px', color: '#374049', fontWeight: 500 }}>
                 No recently saved project
-              </div>
-            )}
-          </div>
+              </span>
+            </div>
+          )}
         </div>
 
       </div>

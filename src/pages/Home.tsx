@@ -852,8 +852,9 @@ simulationRef.current.blockIndex++;
   }, [selectedRobot]);
 
   const handleBlockSelect = useCallback((instanceId: string) => {
-    setActiveBlockId(instanceId);
+    setActiveBlockId(prev => prev === instanceId ? null : instanceId);
     setEditingTargetId(null);
+    setEditingObjectId(null);
   }, []);
 
   const handleBlockDelete = useCallback((instanceId: string) => {
@@ -876,9 +877,10 @@ simulationRef.current.blockIndex++;
   }, []);
 
   const handleTargetSelectFromCanvas = useCallback((id: string) => {
-    setSelectedTargetId(id);
-    setEditingTargetId(id);
+    setSelectedTargetId(prev => prev === id ? null : id);
+    setEditingTargetId(prev => prev === id ? null : id);
     setActiveBlockId(null);
+    setEditingObjectId(null);
   }, []);
 
   const handleTargetUpdate = useCallback((updated: Target) => {
@@ -1108,10 +1110,13 @@ simulationRef.current.blockIndex++;
   }, []);
 
   const handleSelectObject = useCallback((objectId: string) => {
-    const updatedState = { ...objectState, selectedObjectId: objectId };
+    const isCurrentlySelected = objectState.selectedObjectId === objectId;
+    const newSelectedId = isCurrentlySelected ? null : objectId;
+    
+    const updatedState = { ...objectState, selectedObjectId: newSelectedId };
     setObjectState(updatedState);
     saveObjectState(updatedState);
-    setEditingObjectId(objectId);
+    setEditingObjectId(newSelectedId);
     setActiveBlockId(null);
     setEditingTargetId(null);
   }, [objectState]);
@@ -1153,7 +1158,7 @@ simulationRef.current.blockIndex++;
   }, [projectName, selectedRobot, selectedObject, targets, sequenceBlocks]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100vw', height: '100vh', backgroundColor: '#f7f8f9', overflow: 'hidden', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100vw', height: '100vh', backgroundColor: '#f7f8f9', overflow: 'hidden', fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif' }}>
       <TopNav
         projectName={projectName}
         onProjectNameChange={handleProjectNameChange}

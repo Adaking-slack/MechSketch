@@ -1,7 +1,7 @@
 @import './tokens.css';
 
 :root {
-  font-family: var(--sys-font-headings-h1-heavy-fontfamily, Inter, system-ui, sans-serif);
+  font-family: var(--sys-font-headings-h1-heavy-fontfamily, "Helvetica Neue", system-ui, sans-serif);
   background-color: var(--sys-colors-surfaces-surface-primary, #ffffff);
   color: var(--sys-colors-text-text-primary, #1a1a1a);
   font-size: var(--sys-font-body-body-regular-fontsize, 15px);

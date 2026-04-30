@@ -20,63 +20,72 @@ export default function SelectRobot() {
   return (
     <div style={{
       width: '100vw',
-      height: '100vh',
+      minHeight: '100vh',
       backgroundColor: 'var(--sys-colors-surfaces-surface-secondary, #f5f5f5)',
       display: 'flex',
       flexDirection: 'column',
-      fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+      fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+      overflowX: 'hidden',
+      overflowY: 'auto'
     }}>
-      {/* Top Navigation */}
+      {/* Top Navigation & Header */}
       <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
         alignItems: 'center',
-        padding: '24px 32px'
+        padding: '24px 32px',
+        zIndex: 30
       }}>
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '13px',
-            lineHeight: '18px',
-            color: '#374049',
-            padding: 0
-          }}
-        >
-          <ArrowLeft size={16} />
-          Back
-        </button>
-        <button
-          onClick={handleSkip}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '13px',
-            lineHeight: '18px',
-            color: '#374049',
-            padding: 0,
-            fontWeight: 500
-          }}
-        >
-          Skip
-        </button>
-      </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '13px',
+              lineHeight: '18px',
+              color: '#374049',
+              padding: 0
+            }}
+          >
+            <ArrowLeft size={16} />
+            Back
+          </button>
+        </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-        <div style={{ textAlign: 'center', marginBottom: '24px', zIndex: 30 }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 700, margin: '0 0 8px 0', color: '#374049' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-1px', margin: '0 0 8px 0', color: '#374049' }}>
             Select a Robot
           </h1>
-          <p style={{ fontSize: '18px', color: '#374049', margin: 0 }}>
+          <p style={{ fontSize: '15px', fontWeight: 400, color: '#374049', margin: 0 }}>
             Choose a robot to start planning your task sequence
           </p>
         </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={handleSkip}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '13px',
+              lineHeight: '18px',
+              color: '#374049',
+              padding: 0,
+              fontWeight: 500
+            }}
+          >
+            Skip
+          </button>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }}>
         <RobotCarousel />
       </div>
     </div>

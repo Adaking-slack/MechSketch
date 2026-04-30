@@ -36,75 +36,81 @@ export default function SelectObject() {
   return (
     <div style={{
       width: '100vw',
-      height: '100vh',
+      minHeight: '100vh',
       backgroundColor: '#F6F7F9',
       display: 'flex',
       flexDirection: 'column',
-      fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+      fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+      overflowX: 'hidden',
+      overflowY: 'auto'
     }}>
-      {/* Top Navigation */}
+      {/* Top Navigation & Header */}
       <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
         alignItems: 'center',
-        padding: '24px 32px'
+        padding: '24px 32px',
+        zIndex: 30
       }}>
-        <button
-          onClick={() => navigate(-1)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '13px',
-            lineHeight: '18px',
-            color: '#374049',
-            padding: 0
-          }}
-        >
-          <ArrowLeft size={16} />
-          Back
-        </button>
-        <button
-          onClick={handleSkip}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '13px',
-            lineHeight: '18px',
-            color: '#374049',
-            padding: 0
-          }}
-        >
-          Skip for now
-        </button>
-      </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '13px',
+              lineHeight: '18px',
+              color: '#374049',
+              padding: 0
+            }}
+          >
+            <ArrowLeft size={16} />
+            Back
+          </button>
+        </div>
 
-      {/* Header Section */}
-      <div style={{ textAlign: 'center', marginTop: '', marginBottom: '48px' }}>
-        <h1 style={{
-          fontSize: '22px',
-          lineHeight: '31px',
-          letterSpacing: '-1px',
-          fontWeight: 700,
-          color: '#374049',
-          margin: '0 0 8px 0'
-        }}>
-          Select an Object
-        </h1>
-        <p style={{
-          fontSize: '15px',
-          lineHeight: '23px',
-          letterSpacing: '-0.5px',
-          fontWeight: 400,
-          color: '#374049',
-          margin: 0
-        }}>
-          Choose an object your robot will interact with in the scene.
-        </p>
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{
+            fontSize: '22px',
+            lineHeight: '31px',
+            letterSpacing: '-1px',
+            fontWeight: 600,
+            color: '#374049',
+            margin: '0 0 8px 0'
+          }}>
+            Select an Object
+          </h1>
+          <p style={{
+            fontSize: '15px',
+            lineHeight: '23px',
+            fontWeight: 400,
+            color: '#374049',
+            margin: 0
+          }}>
+            Choose an object your robot will interact with in the scene.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={handleSkip}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '13px',
+              lineHeight: '18px',
+              color: '#374049',
+              padding: 0
+            }}
+          >
+            Skip for now
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -113,6 +119,7 @@ export default function SelectObject() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
+        justifyContent: 'center',
         padding: '12px 24px',
         overflowY: 'auto'
       }}>

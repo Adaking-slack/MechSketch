@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+
 import { robotsData } from '../data/robots.data';
 import RobotCard from './RobotCard';
 import { saveSelectedRobot } from '../utils/robotStorage';
@@ -133,24 +133,7 @@ export default function RobotCarousel() {
         </button>
       </div>
 
-      {/* Indicators */}
-      <div style={{ 
-        width: '100%', 
-        display: 'flex', 
-        justifyContent: 'center', 
-        marginTop: '64px',
-        height: '24px' // stabilize layout
-      }}>
-        <motion.div 
-          key={activeIndex % robotsData.length}
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          style={{ fontSize: '16px', fontWeight: 600, color: 'var(--sys-colors-text-text-secondary, #666)', letterSpacing: '2px' }}
-        >
-          {(activeIndex % robotsData.length) + 1} / {robotsData.length}
-        </motion.div>
-      </div>
+
     </div>
   );
 }

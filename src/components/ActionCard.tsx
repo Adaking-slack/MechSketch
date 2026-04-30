@@ -37,7 +37,7 @@ export default function ActionCard({ action, isOverlay, isDraggable = true, vari
     opacity: 1,
     zIndex: 9999,
   } : {
-    backgroundColor: !isDraggable ? '#ffffff' : action.theme.bgColor,
+    backgroundColor: '#ffffff',
     border: `1px solid ${action.theme.borderColor}`,
     borderRadius: '8px',
     padding: '12px 16px',
@@ -74,8 +74,8 @@ export default function ActionCard({ action, isOverlay, isDraggable = true, vari
       </div>
       <span style={{
         color: action.theme.textColor,
-        fontSize: '14px',
-        fontWeight: 500,
+        fontSize: '15px',
+        fontWeight: 400,
         flexGrow: 1,
       }}>
         {action.label}

@@ -388,118 +388,131 @@ export default function Auth() {
     }}>
       <GridBackground />
       <div style={{
-        width: '100%',
-        maxWidth: '440px',
-        background: '#FFFFFF',
-        borderRadius: '16px',
-        padding: '40px',
-        boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.04), 0px 2px 6px rgba(0, 0, 0, 0.02)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '24px',
+        alignItems: 'center',
+        gap: '32px',
+        width: '100%',
+        maxWidth: '440px',
         position: 'relative',
         zIndex: 1,
       }}>
+        <img
+          src="/logo-small.png"
+          alt="MechSketch"
+          style={{ height: '32px' }}
+        />
+        <div style={{
+          width: '100%',
+          background: '#FFFFFF',
+          borderRadius: '16px',
+          padding: '40px',
+          boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.04), 0px 2px 6px rgba(0, 0, 0, 0.02)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '24px',
+        }}>
 
-        {/* Header inside Card */}
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{
-            margin: '0 0 12px 0',
-            fontSize: '24px',
-            lineHeight: '32px',
-            letterSpacing: '-0.5px',
-            fontWeight: 700,
-            color: '#001529',
-          }}>
-            {view === 'login' ? 'Welcome back' : 'Sign up with email'}
-          </h1>
-          <p style={{
-            margin: 0,
-            fontSize: '15px',
-            lineHeight: '25px',
-            color: '#374049',
-          }}>
-            Build, test, and refine robot task sequences using an interactive 3D environment.
-          </p>
-        </div>
+          {/* Header inside Card */}
+          <div style={{ textAlign: 'center' }}>
+            <h1 style={{
+              margin: '0 0 12px 0',
+              fontSize: '28px',
+              lineHeight: '32px',
+              letterSpacing: '-0.5px',
+              fontWeight: 500,
+              color: '#001529',
+            }}>
+              {view === 'login' ? 'Welcome back' : 'Sign up with email'}
+            </h1>
+            <p style={{
+              margin: 0,
+              fontSize: '15px',
+              lineHeight: '25px',
+              color: '#374049',
+            }}>
+              Build, test, and refine robot task sequences using an interactive 3D environment.
+            </p>
+          </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={view}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <InputField
-                placeholder="Email"
-                value={email}
-                onChange={setEmail}
-                error={emailError}
-                icon={<MailIcon />}
-              />
-              <div>
-                <PasswordField
-                  placeholder="Password"
-                  value={password}
-                  onChange={setPassword}
-                  error={passwordError}
-                  icon={<LockIcon />}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={view}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <InputField
+                  placeholder="Email"
+                  value={email}
+                  onChange={setEmail}
+                  error={emailError}
+                  icon={<MailIcon />}
                 />
-                {view === 'login' && (
-                  <div style={{ textAlign: 'right', marginTop: '8px' }}>
-                    <button
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        padding: 0,
-                        color: '#00376E',
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        fontFamily: 'Helvetica Neue, -apple-system, sans-serif'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                      onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                )}
+                <div>
+                  <PasswordField
+                    placeholder="Password"
+                    value={password}
+                    onChange={setPassword}
+                    error={passwordError}
+                    icon={<LockIcon />}
+                  />
+                  {view === 'login' && (
+                    <div style={{ textAlign: 'right', marginTop: '8px' }}>
+                      <button
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          color: '#00376E',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          fontWeight: 500,
+                          fontFamily: 'Helvetica Neue, -apple-system, sans-serif'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <PrimaryButton
+                  label={view === 'login' ? 'Sign In' : 'Get started'}
+                  onClick={handleSubmit}
+                  loading={loading}
+                />
               </div>
 
-              <PrimaryButton
-                label={view === 'login' ? 'Sign In' : 'Get started'}
-                onClick={handleSubmit}
-                loading={loading}
-              />
-            </div>
+              <Divider />
 
-            <Divider />
+              <GoogleButton onClick={() => handleOAuth('google')} />
 
-            <GoogleButton onClick={() => handleOAuth('google')} />
-
-            <div style={{ textAlign: 'center', marginTop: '4px' }}>
-              <span style={{ fontSize: '13px', color: '#374049' }}>
-                {view === 'login' ? "Don't have an account? " : "Already have an account? "}
-                <button
-                  onClick={() => { setError(undefined); setEmailError(undefined); setPasswordError(undefined); setView(view === 'login' ? 'signup' : 'login'); }}
-                  style={{
-                    background: 'none', border: 'none', padding: 0,
-                    color: '#00376E', cursor: 'pointer', fontWeight: 600,
-                    fontSize: '13px'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
-                  onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
-                >
-                  {view === 'login' ? 'Sign up' : 'Login'}
-                </button>
-              </span>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+              <div style={{ textAlign: 'center', marginTop: '4px' }}>
+                <span style={{ fontSize: '13px', color: '#374049' }}>
+                  {view === 'login' ? "Don't have an account? " : "Already have an account? "}
+                  <button
+                    onClick={() => { setError(undefined); setEmailError(undefined); setPasswordError(undefined); setView(view === 'login' ? 'signup' : 'login'); }}
+                    style={{
+                      background: 'none', border: 'none', padding: 0,
+                      color: '#00376E', cursor: 'pointer', fontWeight: 600,
+                      fontSize: '13px'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                    onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                  >
+                    {view === 'login' ? 'Sign up' : 'Login'}
+                  </button>
+                </span>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );

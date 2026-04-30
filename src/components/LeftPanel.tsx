@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, X, Crosshair, Square } from 'lucide-react';
 import type { Robot, ActionCardData } from '../data/robots.data';
 import ActionCard from './ActionCard';
@@ -40,16 +40,6 @@ function AddTargetMenu({ onClose, onAddTarget }: { onClose: () => void; onAddTar
       </div>
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <button
-          onClick={() => { onAddTarget('point'); onClose(); }}
-          style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', cursor: 'pointer', textAlign: 'left' }}
-        >
-          <Crosshair size={20} color="#10B981" />
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: 500, color: '#374049' }}>Target Point</div>
-            <div style={{ fontSize: '12px', color: '#888' }}>Single coordinate for precise placement</div>
-          </div>
-        </button>
-        <button
           onClick={() => { onAddTarget('zone'); onClose(); }}
           style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', cursor: 'pointer', textAlign: 'left' }}
         >
@@ -64,8 +54,8 @@ function AddTargetMenu({ onClose, onAddTarget }: { onClose: () => void; onAddTar
   );
 }
 
-export default function LeftPanel({ 
-  robot, 
+export default function LeftPanel({
+  robot,
   onActionClick,
   targets = [],
   selectedTargetId,
@@ -75,6 +65,13 @@ export default function LeftPanel({
   highlightAddTarget = false,
 }: LeftPanelProps) {
   const [showAddTarget, setShowAddTarget] = useState(false);
+  const [activeTab, setActiveTab] = useState<'action' | 'target'>('action');
+
+  useEffect(() => {
+    if (highlightAddTarget) {
+      setActiveTab('target');
+    }
+  }, [highlightAddTarget]);
 
   const allActions = robot ? [...(robot.primaryActions || []), ...(robot.secondaryActions || [])] : [];
 
@@ -87,89 +84,131 @@ export default function LeftPanel({
         </>
       )}
 
-      <h2 style={{ margin: '0 0 24px 0', fontSize: '15px', fontWeight: 600, color: '#374049', lineHeight: '31px', letterSpacing: '-1px' }}>
-        Action Cards
-      </h2>
-
-      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
-        {!robot ? (
-          <div style={{ color: '#a0aec0', fontSize: '14px' }}>Select a robot to view available actions</div>
-        ) : allActions.length > 0 ? (
-          allActions.map((action) => (
-            <ActionCard key={action.id} action={action} onClick={() => onActionClick?.(action)} />
-          ))
-        ) : (
-          <div style={{ color: '#a0aec0', fontSize: '14px' }}>No actions available for {robot.name}.</div>
-        )}
+      {/* Tabs */}
+      <div style={{ display: 'flex', backgroundColor: '#F6F7F9', padding: '4px', borderRadius: '10px', marginBottom: '24px' }}>
+        <button
+          onClick={() => setActiveTab('action')}
+          style={{
+            flex: 1,
+            padding: '8px 0',
+            backgroundColor: activeTab === 'action' ? '#FFFFFF' : 'transparent',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 600,
+            color: activeTab === 'action' ? '#1A1A1A' : '#888888',
+            cursor: 'pointer',
+            boxShadow: activeTab === 'action' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          Action
+        </button>
+        <button
+          onClick={() => setActiveTab('target')}
+          style={{
+            flex: 1,
+            padding: '8px 0',
+            backgroundColor: activeTab === 'target' ? '#FFFFFF' : 'transparent',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 600,
+            color: activeTab === 'target' ? '#1A1A1A' : '#888888',
+            cursor: 'pointer',
+            boxShadow: activeTab === 'target' ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          Target
+        </button>
       </div>
 
-      <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#4a5568' }}>Targets</h3>
-          <button
-            onClick={() => setShowAddTarget(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '4px 8px',
-              backgroundColor: highlightAddTarget ? '#00376E' : 'transparent',
-              border: `2px solid ${highlightAddTarget ? '#00376E' : '#e2e8f0'}`,
-              borderRadius: '4px',
-              fontSize: '12px',
-              fontWeight: 500,
-              color: highlightAddTarget ? '#ffffff' : '#4a5568',
-              cursor: 'pointer',
-              boxShadow: highlightAddTarget ? '0 0 0 3px rgba(0, 55, 110, 0.3)' : 'none',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <Plus size={12} />Add Target
-          </button>
-        </div>
-        {highlightAddTarget && (
-          <div style={{
-            marginBottom: '12px',
-            padding: '8px 12px',
-            backgroundColor: '#E8F0F8',
-            borderRadius: '6px',
-            fontSize: '12px',
-            color: '#00376E',
-            fontWeight: 500,
-          }}>
-            Click here to add a target
-          </div>
+      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px', display: 'flex', flexDirection: 'column' }}>
+        {activeTab === 'action' && (
+          <>
+            {!robot ? (
+              <div style={{ color: '#a0aec0', fontSize: '14px' }}>Select a robot to view available actions</div>
+            ) : allActions.length > 0 ? (
+              allActions.map((action) => (
+                <ActionCard key={action.id} action={action} onClick={() => onActionClick?.(action)} />
+              ))
+            ) : (
+              <div style={{ color: '#a0aec0', fontSize: '14px' }}>No actions available for {robot.name}.</div>
+            )}
+          </>
         )}
 
-        {targets.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {targets.map((target) => (
-              <div
-                key={target.id}
-                onClick={() => onTargetSelect?.(target.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: selectedTargetId === target.id ? '#E8F0F8' : '#F8F9FA', border: `1px solid ${selectedTargetId === target.id ? '#0B3A6E' : '#EAEAEA'}`, borderRadius: '6px', cursor: 'pointer' }}
+        {activeTab === 'target' && (
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#4a5568' }}>Targets</h3>
+              <button
+                onClick={() => setShowAddTarget(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '4px 8px',
+                  backgroundColor: highlightAddTarget ? '#00376E' : 'transparent',
+                  border: `2px solid ${highlightAddTarget ? '#00376E' : '#e2e8f0'}`,
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  color: highlightAddTarget ? '#ffffff' : '#4a5568',
+                  cursor: 'pointer',
+                  boxShadow: highlightAddTarget ? '0 0 0 3px rgba(0, 55, 110, 0.3)' : 'none',
+                  transition: 'all 0.2s ease',
+                }}
               >
-                {target.type === 'point' ? <Crosshair size={14} color={target.color} /> : <Square size={14} color={target.color} />}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 500, color: '#374049' }}>{target.name}</div>
-                  <div style={{ fontSize: '11px', color: '#888' }}>
-                    {target.type === 'point' 
-                      ? `X:${target.position.x} Y:${target.position.y} Z:${target.position.z}`
-                      : `${target.size?.width}x${target.size?.depth}`
-                    }
-                  </div>
-                </div>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDeleteTarget?.(target.id); }}
-                  style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: '#aaa', display: 'flex' }}
-                >
-                  <X size={14} />
-                </button>
+                <Plus size={12} />Add Target
+              </button>
+            </div>
+            {highlightAddTarget && (
+              <div style={{
+                marginBottom: '12px',
+                padding: '8px 12px',
+                backgroundColor: '#E8F0F8',
+                borderRadius: '6px',
+                fontSize: '12px',
+                color: '#00376E',
+                fontWeight: 500,
+              }}>
+                Click here to add a target
               </div>
-            ))}
+            )}
+
+            {targets.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {targets.map((target) => (
+                  <div
+                    key={target.id}
+                    onClick={() => onTargetSelect?.(target.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', backgroundColor: selectedTargetId === target.id ? '#E8F0F8' : '#F8F9FA', border: `1px solid ${selectedTargetId === target.id ? '#0B3A6E' : '#EAEAEA'}`, borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    {target.type === 'point' ? <Crosshair size={14} color={target.color} /> : <Square size={14} color={target.color} />}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 500, color: '#374049' }}>{target.name}</div>
+                      <div style={{ fontSize: '11px', color: '#888' }}>
+                        {target.type === 'point'
+                          ? `X:${target.position.x} Y:${target.position.y} Z:${target.position.z}`
+                          : `${target.size?.width}x${target.size?.depth}`
+                        }
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDeleteTarget?.(target.id); }}
+                      style={{ background: 'none', border: 'none', padding: '2px', cursor: 'pointer', color: '#aaa', display: 'flex' }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color: '#a0aec0', fontSize: '13px', padding: '8px 0' }}>No targets defined</div>
+            )}
           </div>
-        ) : (
-          <div style={{ color: '#a0aec0', fontSize: '13px', padding: '8px 0' }}>No targets defined</div>
         )}
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Square, Play, Pause, RotateCcw, LogOut, Save, Home, Download } from 'lucide-react';
+import { ChevronDown, ChevronUp, Square, Play, Pause, RotateCcw, LogOut, Save, Home, Download, Settings } from 'lucide-react';
 
 interface TopNavProps {
   projectName?: string;
@@ -15,7 +15,7 @@ interface TopNavProps {
   onSave?: () => void;
   onHome?: () => void;
   onDeleteProject?: () => void;
-  onSettings?: () => void; // Unused, explicitly removed from UI
+  onSettings?: () => void;
   onLogout?: () => void;
   simulationMode?: boolean;
   simulationPaused?: boolean;
@@ -38,6 +38,7 @@ export default function TopNav({
   onSave,
   onHome,
   onDeleteProject,
+  onSettings,
   onLogout,
   simulationMode = false,
   simulationPaused = false,
@@ -113,69 +114,9 @@ export default function TopNav({
   return (
     <nav style={styles.nav}>
       <div style={styles.container}>
-        {/* Left: File Menu */}
+        {/* Left: Project Name and File Menu */}
         <div style={styles.leftSection}>
-          <div ref={fileMenuRef} style={{ position: 'relative' }}>
-            <button
-              onClick={() => setShowFileMenu(!showFileMenu)}
-              style={styles.fileBtn}
-              onMouseOver={(e) => e.currentTarget.style.opacity = '0.7'}
-              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-            >
-              File
-              {showFileMenu ? <ChevronUp size={24} color="#374049" /> : <ChevronDown size={24} color="#374049" />}
-            </button>
-            {showFileMenu && (
-              <div style={styles.dropdownMenu}>
-                {onHome && (
-                  <button
-                    onClick={() => {
-                      onHome();
-                      setShowFileMenu(false);
-                    }}
-                    style={styles.fileDropdownItem}
-                  >
-                    <Home size={14} />
-                    Home
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    if (hasSequence && onExport) {
-                      onExport();
-                      setShowFileMenu(false);
-                    }
-                  }}
-                  style={{
-                    ...styles.fileDropdownItem,
-                    opacity: hasSequence ? 1 : 0.5,
-                    cursor: hasSequence ? 'pointer' : 'not-allowed',
-                  }}
-                  disabled={!hasSequence}
-                  title={hasSequence ? "Export as JSON" : "No sequence to export"}
-                >
-                  <Download size={14} />
-                  Export
-                </button>
-                {onDeleteProject && (
-                  <button
-                    onClick={() => {
-                      onDeleteProject();
-                      setShowFileMenu(false);
-                    }}
-                    style={{ ...styles.fileDropdownItem, color: '#dc2626' }}
-                  >
-                    Delete Project
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Center: Project Name */}
-        <div style={styles.centerSection}>
-          <div style={styles.projectNameContainer}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {editing ? (
               <input
                 ref={inputRef}
@@ -189,12 +130,22 @@ export default function TopNav({
                     setEditing(false);
                   }
                 }}
-                style={styles.input}
+                style={{ ...styles.input, textAlign: 'left', width: '200px' }}
               />
             ) : (
               <button
                 onClick={() => setEditing(true)}
-                style={styles.projectNameBtn}
+                style={{ 
+                  fontSize: '18px', 
+                  lineHeight: '25px', 
+                  fontWeight: 500, 
+                  color: '#374049', 
+                  background: 'transparent', 
+                  border: 'none', 
+                  cursor: 'pointer', 
+                  whiteSpace: 'nowrap', 
+                  transition: 'opacity 0.15s' 
+                }}
                 title="Click to edit project name"
                 onMouseOver={(e) => e.currentTarget.style.opacity = '0.7'}
                 onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
@@ -202,75 +153,134 @@ export default function TopNav({
                 {projectName}
               </button>
             )}
+            
+            <div ref={fileMenuRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <button
+                onClick={() => setShowFileMenu(!showFileMenu)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+              >
+                {showFileMenu ? <ChevronUp size={20} color="#374049" /> : <ChevronDown size={20} color="#374049" />}
+              </button>
+              {showFileMenu && (
+                <div style={{...styles.dropdownMenu, top: '100%', left: '0', marginTop: '4px'}}>
+                  {onHome && (
+                    <button
+                      onClick={() => {
+                        onHome();
+                        setShowFileMenu(false);
+                      }}
+                      style={styles.fileDropdownItem}
+                    >
+                      <Home size={14} />
+                      Home
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (hasSequence && onExport) {
+                        onExport();
+                        setShowFileMenu(false);
+                      }
+                    }}
+                    style={{
+                      ...styles.fileDropdownItem,
+                      opacity: hasSequence ? 1 : 0.5,
+                      cursor: hasSequence ? 'pointer' : 'not-allowed',
+                    }}
+                    disabled={!hasSequence}
+                    title={hasSequence ? "Export as JSON" : "No sequence to export"}
+                  >
+                    <Download size={14} />
+                    Export
+                  </button>
+                  {onDeleteProject && (
+                    <button
+                      onClick={() => {
+                        onDeleteProject();
+                        setShowFileMenu(false);
+                      }}
+                      style={{ ...styles.fileDropdownItem, color: '#dc2626' }}
+                    >
+                      Delete Project
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Center: Simulation Controls */}
+        <div style={styles.centerSection}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {simulationMode && (
+              <button
+                onClick={onStop}
+                style={styles.stopBtn}
+                onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+              >
+                <Square size={12} style={{ marginRight: '4px' }} />
+                Stop
+              </button>
+            )}
+
+            {(canSave || simulationMode) && onSave && (
+              <button
+                onClick={onSave}
+                style={styles.saveBtn}
+                onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+              >
+                <Save size={12} style={{ marginRight: '4px' }} />
+                Save
+              </button>
+            )}
+
+            <button
+              onClick={onSimulate}
+              style={{
+                ...styles.simulateBtn,
+                backgroundColor: simulationMode
+                  ? (simulationPaused ? '#10B981' : '#F59E0B')
+                  : '#00376E',
+              }}
+              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+            >
+              {simulationMode ? (
+                simulationPaused ? (
+                  <>
+                    <Play size={12} style={{ marginRight: '4px' }} />
+                    Resume
+                  </>
+                ) : (
+                  <>
+                    <Pause size={12} style={{ marginRight: '4px' }} />
+                    Pause
+                  </>
+                )
+              ) : (
+                'Simulate'
+              )}
+            </button>
+
+            {!simulationMode && simulationCompleted && (
+              <button
+                onClick={onStartNew}
+                style={styles.startNewBtn}
+                onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+              >
+                <RotateCcw size={12} style={{ marginRight: '4px' }} />
+                Start New
+              </button>
+            )}
           </div>
         </div>
 
         {/* Right: Actions & Profile */}
         <div style={styles.rightSection}>
-          {simulationMode && (
-            <button
-              onClick={onStop}
-              style={styles.stopBtn}
-              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-            >
-              <Square size={12} style={{ marginRight: '4px' }} />
-              Stop
-            </button>
-          )}
-
-          {(canSave || simulationMode) && onSave && (
-            <button
-              onClick={onSave}
-              style={styles.saveBtn}
-              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-            >
-              <Save size={12} style={{ marginRight: '4px' }} />
-              Save
-            </button>
-          )}
-
-          <button
-            onClick={onSimulate}
-            style={{
-              ...styles.simulateBtn,
-              backgroundColor: simulationMode
-                ? (simulationPaused ? '#10B981' : '#F59E0B')
-                : '#00376E',
-            }}
-            onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-          >
-            {simulationMode ? (
-              simulationPaused ? (
-                <>
-                  <Play size={12} style={{ marginRight: '4px' }} />
-                  Resume
-                </>
-              ) : (
-                <>
-                  <Pause size={12} style={{ marginRight: '4px' }} />
-                  Pause
-                </>
-              )
-            ) : (
-              'Simulate'
-            )}
-          </button>
-
-          {!simulationMode && simulationCompleted && (
-            <button
-              onClick={onStartNew}
-              style={styles.startNewBtn}
-              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-            >
-              <RotateCcw size={12} style={{ marginRight: '4px' }} />
-              Start New
-            </button>
-          )}
-
           <button
             onClick={handleRobotObjectClick}
             style={styles.robotObjectBtn}
@@ -298,6 +308,16 @@ export default function TopNav({
                 <button
                   onClick={() => {
                     setShowUserMenu(false);
+                    onSettings?.();
+                  }}
+                  style={styles.dropdownItem}
+                >
+                  <Settings size={16} />
+                  <span>Settings</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
                     onLogout?.();
                   }}
                   style={styles.dropdownItem}
@@ -320,7 +340,7 @@ const styles: Record<string, React.CSSProperties> = {
     height: '56px',
     backgroundColor: '#FFFFFF',
     borderBottom: '1px solid #E2E8F0',
-    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
   },
   container: {
     display: 'flex',
@@ -332,27 +352,10 @@ const styles: Record<string, React.CSSProperties> = {
   leftSection: {
     display: 'flex',
     alignItems: 'center',
-  },
-  fileBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px', // 4-8px spacing requested
-    padding: '6px 10px',
-    borderRadius: '6px',
-    border: 'none',
-    backgroundColor: 'transparent',
-    color: '#374049',
-    fontSize: '15px',
-    lineHeight: '23px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'opacity 0.2s',
+    flex: 1,
   },
   dropdownMenu: {
     position: 'absolute',
-    top: '100%',
-    left: 0,
-    marginTop: '4px',
     backgroundColor: '#ffffff',
     borderRadius: '8px',
     boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
@@ -381,55 +384,33 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'center',
     flex: 1,
   },
-  projectNameContainer: {
-    backgroundColor: '#F6F7F9',
-    padding: '4px 12px',
-    borderRadius: '8px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    maxWidth: '300px',
-  },
-  projectNameBtn: {
-    fontSize: '15px',
-    lineHeight: '23px',
-    color: '#374049',
-    fontWeight: 600,
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    transition: 'opacity 0.15s',
-  },
   input: {
-    fontSize: '15px',
-    lineHeight: '23px',
+    fontSize: '18px',
+    lineHeight: '25px',
     color: '#374049',
-    fontWeight: 600,
-    border: 'none',
-    background: 'transparent',
+    fontWeight: 500,
+    border: '1px solid #E2E8F0',
+    borderRadius: '4px',
+    padding: '2px 8px',
+    background: '#F8FAFC',
     outline: 'none',
-    width: '100%',
-    textAlign: 'center',
   },
   rightSection: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-end',
+    flex: 1,
     gap: '16px',
   },
   robotObjectBtn: {
-    backgroundColor: '#ffffffff',
+    backgroundColor: 'transparent',
     color: '#001529',
     fontSize: '13px',
     lineHeight: '18px',
     fontWeight: 600,
-    border: '1px solid #EAEAEA',
+    border: 'none',
     cursor: 'pointer',
-    padding: '6px 12px',
-    borderRadius: '6px',
+    padding: '6px 0',
     transition: 'opacity 0.15s',
     display: 'flex',
     alignItems: 'center',
@@ -497,7 +478,7 @@ const styles: Record<string, React.CSSProperties> = {
   userSection: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px', // 6-10px spacing
+    gap: '8px',
     cursor: 'pointer',
     backgroundColor: 'transparent',
     border: 'none',
