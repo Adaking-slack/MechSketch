@@ -5,6 +5,7 @@ import SelectObject from './pages/SelectObject';
 import Planner from './pages/Planner';
 import Auth from './pages/Auth';
 import Home from './pages/Home';
+import Settings from './pages/Settings';
 import './App.css';
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
         <Route path="/select-object" element={<SelectObject />} />
         <Route path="/planner" element={<Planner />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </Router>
   );
