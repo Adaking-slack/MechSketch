@@ -79,7 +79,7 @@ function InputField({
             border: `1px solid ${error ? '#ef4444' : 'transparent'}`,
             borderRadius: '8px',
             fontSize: '14px',
-            fontFamily: 'Helvetica Neue, -apple-system, sans-serif',
+            fontFamily: 'var(--sys-typography-font-family-font-sans-serif), -apple-system, sans-serif',
             color: '#374049',
             outline: 'none',
             boxSizing: 'border-box',
@@ -165,7 +165,7 @@ function PrimaryButton({
         borderRadius: '8px',
         fontSize: '14px',
         fontWeight: 500,
-        fontFamily: 'Helvetica Neue, -apple-system, sans-serif',
+        fontFamily: 'var(--sys-typography-font-family-font-sans-serif), -apple-system, sans-serif',
         cursor: disabled ? 'not-allowed' : 'pointer',
         transition: 'opacity 0.2s',
       }}
@@ -195,7 +195,7 @@ function GoogleButton({ onClick }: { onClick: () => void }) {
         borderRadius: '8px',
         fontSize: '14px',
         fontWeight: 500,
-        fontFamily: 'Helvetica Neue, -apple-system, sans-serif',
+        fontFamily: 'var(--sys-typography-font-family-font-sans-serif), -apple-system, sans-serif',
         cursor: 'pointer',
         transition: 'opacity 0.2s',
       }}
@@ -381,7 +381,7 @@ export default function Auth() {
       justifyContent: 'center',
       padding: '24px',
       boxSizing: 'border-box',
-      fontFamily: 'Helvetica Neue, -apple-system, sans-serif',
+      fontFamily: 'var(--sys-typography-font-family-font-sans-serif), -apple-system, sans-serif',
       color: '#001529',
       position: 'relative',
       overflow: 'hidden'
@@ -404,20 +404,20 @@ export default function Auth() {
         {/* Header inside Card */}
         <div style={{ textAlign: 'center' }}>
           <h1 style={{
-            margin: '0 0 12px 0',
-            fontSize: '24px',
-            lineHeight: '32px',
+            margin: '0 0 var(--sys-tokens-spacing-spacing-xxs) 0',
+            fontSize: 'var(--sys-typography-size-28, 28px)',
+            lineHeight: '1.2',
             letterSpacing: '-0.5px',
             fontWeight: 700,
-            color: '#001529',
+            color: 'var(--sys-primitives-colors-neutral-neutral-900)',
           }}>
             {view === 'login' ? 'Welcome back' : 'Sign up with email'}
           </h1>
           <p style={{
-            margin: 0,
-            fontSize: '15px',
-            lineHeight: '25px',
-            color: '#374049',
+            margin: '0 0 var(--sys-tokens-spacing-spacing-xl) 0',
+            fontSize: 'var(--sys-typography-size-15, 15px)',
+            lineHeight: '1.5',
+            color: 'var(--sys-primitives-colors-neutral-neutral-600)',
           }}>
             Build, test, and refine robot task sequences using an interactive 3D environment.
           </p>
@@ -430,9 +430,9 @@ export default function Auth() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sys-tokens-spacing-spacing-md)' }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sys-tokens-spacing-spacing-md)' }}>
               <InputField
                 placeholder="Email"
                 value={email}
@@ -459,7 +459,7 @@ export default function Auth() {
                         cursor: 'pointer',
                         fontSize: '13px',
                         fontWeight: 500,
-                        fontFamily: 'Helvetica Neue, -apple-system, sans-serif'
+                        fontFamily: 'var(--sys-typography-font-family-font-sans-serif), -apple-system, sans-serif'
                       }}
                       onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
                       onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}

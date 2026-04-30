@@ -6,6 +6,7 @@ import Planner from './pages/Planner';
 import Auth from './pages/Auth';
 import Home from './pages/Home';
 import Settings from './pages/Settings';
+import Faq from './pages/Faq';
 import './App.css';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
         <Route path="/planner" element={<Planner />} />
         <Route path="/home" element={<Home />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/faq" element={<Faq />} />
       </Routes>
     </Router>
   );

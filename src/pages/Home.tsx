@@ -833,7 +833,7 @@ simulationRef.current.blockIndex++;
   }, [projectName, selectedRobot, selectedObject, targets, sequenceBlocks]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100vw', height: '100vh', backgroundColor: '#f7f8f9', overflow: 'hidden', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100vw', height: '100vh', backgroundColor: '#f7f8f9', overflow: 'hidden', fontFamily: 'var(--sys-typography-font-family-font-sans-serif), -apple-system, sans-serif' }}>
       <TopNav
         projectName={projectName}
         onProjectNameChange={handleProjectNameChange}

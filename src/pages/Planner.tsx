@@ -51,7 +51,7 @@ export default function Planner() {
       width: '100vw',
       backgroundColor: '#f7f8f9',
       position: 'relative',
-      fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      fontFamily: 'var(--sys-typography-font-family-font-sans-serif), -apple-system, sans-serif',
       overflowY: 'auto',
       overflowX: 'hidden'
     }}>
@@ -64,13 +64,13 @@ export default function Planner() {
           left: '32px',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          gap: 'var(--sys-tokens-spacing-spacing-xs)',
           background: 'none',
           border: 'none',
           cursor: 'pointer',
-          fontSize: '13px',
+          fontSize: 'var(--sys-typography-size-13, 13px)',
           lineHeight: '18px',
-          color: '#374049',
+          color: 'var(--sys-primitives-colors-neutral-neutral-800)',
           padding: 0,
           zIndex: 10
         }}
@@ -85,131 +85,164 @@ export default function Planner() {
       <div style={{
         maxWidth: '1200px',
         margin: '0 auto',
-        minHeight: '100%',
-        paddingTop: '15vh',
+        height: '100%',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxSizing: 'border-box',
+        padding: '24px'
       }}>
 
-        {/* Top Centered Section */}
+        {/* Action Flow Section */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'flex-start',
-          width: '380px',
-          margin: '0 auto'
+          width: '100%',
+          maxWidth: '480px'
         }}>
-          <h2 style={{
-            fontSize: '14px',
-            fontWeight: 600,
-            color: '#1a1a1a',
-            margin: '0 0 12px 0'
-          }}>
-            Input your project name
-          </h2>
+          <div style={{ textAlign: 'center' }}>
+            <h1 style={{
+              margin: '0 0 var(--sys-tokens-spacing-spacing-xxs) 0',
+              fontSize: 'var(--sys-typography-size-28, 28px)',
+              lineHeight: '1.2',
+              letterSpacing: '-0.5px',
+              fontWeight: 700,
+              color: 'var(--sys-primitives-colors-neutral-neutral-900)',
+            }}>
+              Name your project
+            </h1>
+            <p style={{
+              margin: '0 0 var(--sys-tokens-spacing-spacing-xl) 0',
+              fontSize: 'var(--sys-typography-size-15, 15px)',
+              lineHeight: '1.5',
+              color: 'var(--sys-primitives-colors-neutral-neutral-600)',
+            }}>
+              Give your project a name to get started
+            </p>
+          </div>
 
-          <input
-            ref={inputRef}
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            style={{
-              width: '100%',
-              height: '46px',
-              padding: '0 16px',
-              backgroundColor: '#ffffff',
-              border: '1px solid #e2e8f0',
-              borderRadius: '6px',
-              fontSize: '15px',
-              fontWeight: 500,
-              color: '#1a1a1a',
-              outline: 'none',
-              boxSizing: 'border-box'
-            }}
-          />
+          <div style={{ width: '100%' }}>
+            <input
+              ref={inputRef}
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="e.g. My First Robot Task"
+              style={{
+                width: '100%',
+                height: '48px',
+                padding: '0 var(--sys-tokens-spacing-spacing-md)',
+                backgroundColor: 'var(--sys-primitives-colors-base-white)',
+                border: '1px solid var(--sys-primitives-colors-neutral-neutral-200)',
+                borderRadius: 'var(--sys-tokens-radius-radius-xs)',
+                fontSize: 'var(--sys-typography-size-15)',
+                fontWeight: 500,
+                color: 'var(--sys-primitives-colors-neutral-neutral-900)',
+                outline: 'none',
+                boxSizing: 'border-box',
+                transition: 'border-color 0.2s ease',
+                cursor: 'text'
+              }}
+              onFocus={(e) => e.target.style.borderColor = 'var(--sys-primitives-colors-primary-primary-400)'}
+              onBlur={(e) => e.target.style.borderColor = 'var(--sys-primitives-colors-neutral-neutral-200)'}
+            />
 
-          <button
-            style={{
-              width: '100%',
-              height: '46px',
-              marginTop: '24px',
-              backgroundColor: '#00376E',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '14px',
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'opacity 0.2s ease'
-            }}
-            onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
-            onClick={() => {
-              saveProjectName(projectName || 'Untitled');
-              navigate('/home');
-            }}
-          >
-            Continue
-          </button>
+            <button
+              style={{
+                width: '100%',
+                height: '48px',
+                marginTop: 'var(--sys-tokens-spacing-spacing-md)',
+                backgroundColor: 'var(--sys-primitives-colors-primary-primary-500)',
+                color: 'var(--sys-primitives-colors-base-white)',
+                border: 'none',
+                borderRadius: 'var(--sys-tokens-radius-radius-xs)',
+                fontSize: 'var(--sys-typography-size-15)',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+              onClick={() => {
+                saveProjectName(projectName || 'Untitled');
+                navigate('/home');
+              }}
+            >
+              Continue to workspace
+            </button>
+          </div>
         </div>
 
         {/* Recently Saved Section */}
         <div style={{
-          marginTop: '100px',
-          paddingLeft: '32px',
+          marginTop: 'var(--sys-tokens-spacing-spacing-2xl)',
           width: '100%',
+          maxWidth: '480px',
           boxSizing: 'border-box'
         }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#1a1a1a', margin: '0 0 20px 0', letterSpacing: '-0.3px' }}>
+          <h3 style={{ 
+            fontSize: 'var(--sys-typography-size-13)', 
+            fontWeight: 500, 
+            color: 'var(--sys-primitives-colors-neutral-neutral-500)', 
+            margin: '0 0 var(--sys-tokens-spacing-spacing-xxs) 0', 
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}>
             Recently saved
           </h3>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 260px)', gap: '24px 24px', paddingBottom: '20px', maxWidth: '1112px' }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            width: '100%'
+          }}>
             {savedSimulations.length > 0 ? (
               savedSimulations.map(sim => (
                 <div 
                   key={sim.id} 
                   style={{ 
                     display: 'flex', 
-                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     cursor: 'pointer',
-                    transition: 'transform 0.2s ease',
+                    padding: 'var(--sys-tokens-spacing-spacing-xs) var(--sys-tokens-spacing-spacing-xxs)',
+                    borderBottom: '1px solid var(--sys-primitives-colors-neutral-neutral-200)',
+                    transition: 'background-color 0.2s ease',
+                    borderRadius: 'var(--sys-tokens-radius-radius-xxs)'
                   }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--sys-primitives-colors-neutral-netural-100)'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   onClick={() => {
                     saveProjectName(projectName || 'Untitled');
                     sessionStorage.setItem('mechsketch_load_simulation', JSON.stringify(sim));
                     sessionStorage.setItem('mechsketch_load_simulation_id', sim.id);
                     navigate('/home');
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                  onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                  <div
-                    style={{
-                      width: '260px',
-                      height: '260px',
-                      backgroundColor: '#ffffff',
-                      borderRadius: '12px',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.04)'
-                    }}
-                  >
-                    <div style={{ pointerEvents: 'none', width: '100%', height: '100%', backgroundColor: '#f0f4f8' }}>
-                      <img
-                        src={sim.thumbnail || "https://placehold.co/260x260/e2e8f0/a0aec0?text=No+Thumbnail"}
-                        alt={`${sim.name} thumbnail`}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#1a1a1a', marginTop: '16px', letterSpacing: '-0.2px', fontWeight: 500 }}>
+                  <div style={{ 
+                    fontSize: 'var(--sys-typography-size-15)', 
+                    color: 'var(--sys-primitives-colors-neutral-neutral-700)', 
+                    fontWeight: 500 
+                  }}>
                     {sim.name}
+                  </div>
+                  <div style={{
+                    fontSize: 'var(--sys-typography-size-13)',
+                    color: 'var(--sys-primitives-colors-neutral-neutral-500)',
+                  }}>
+                    {sim.updatedAt || sim.savedAt ? `Edited ${new Date(sim.updatedAt || sim.savedAt).toLocaleDateString()}` : 'Unknown date'}
                   </div>
                 </div>
               ))
             ) : (
-              <div style={{ fontSize: '14px', color: '#718096' }}>
-                No recently saved project
+              <div style={{ 
+                fontSize: 'var(--sys-typography-size-13)', 
+                color: 'var(--sys-primitives-colors-neutral-neutral-500)',
+                textAlign: 'left',
+                paddingTop: 'var(--sys-tokens-spacing-spacing-xxs)',
+                opacity: 0.8
+              }}>
+                No projects yet
               </div>
             )}
           </div>

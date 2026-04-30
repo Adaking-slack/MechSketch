@@ -24,7 +24,7 @@ export default function SelectRobot() {
       backgroundColor: 'var(--sys-colors-surfaces-surface-secondary, #f5f5f5)',
       display: 'flex',
       flexDirection: 'column',
-      fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+      fontFamily: 'var(--sys-typography-font-family-font-sans-serif), -apple-system, sans-serif'
     }}>
       {/* Top Navigation */}
       <div style={{
@@ -42,11 +42,13 @@ export default function SelectRobot() {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            fontSize: '13px',
+            fontSize: 'var(--sys-typography-size-13, 13px)',
             lineHeight: '18px',
-            color: '#374049',
+            color: 'var(--sys-primitives-colors-neutral-neutral-800)',
             padding: 0
           }}
+          onMouseOver={(e) => e.currentTarget.style.opacity = '0.7'}
+          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
         >
           <ArrowLeft size={16} />
           Back
@@ -57,23 +59,36 @@ export default function SelectRobot() {
             background: 'none',
             border: 'none',
             cursor: 'pointer',
-            fontSize: '13px',
+            fontSize: 'var(--sys-typography-size-13, 13px)',
             lineHeight: '18px',
-            color: '#374049',
+            color: 'var(--sys-primitives-colors-neutral-neutral-800)',
             padding: 0,
             fontWeight: 500
           }}
+          onMouseOver={(e) => e.currentTarget.style.opacity = '0.7'}
+          onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
         >
           Skip
         </button>
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-        <div style={{ textAlign: 'center', marginBottom: '24px', zIndex: 30 }}>
-          <h1 style={{ fontSize: '32px', fontWeight: 700, margin: '0 0 8px 0', color: '#374049' }}>
+        <div style={{ textAlign: 'center', marginBottom: 'var(--sys-tokens-spacing-spacing-xl)', zIndex: 30 }}>
+          <h1 style={{ 
+            fontSize: 'var(--sys-typography-size-28, 28px)', 
+            fontWeight: 700, 
+            margin: '0 0 var(--sys-tokens-spacing-spacing-xxs) 0', 
+            color: 'var(--sys-primitives-colors-neutral-neutral-900)',
+            letterSpacing: '-0.5px'
+          }}>
             Select a Robot
           </h1>
-          <p style={{ fontSize: '18px', color: '#374049', margin: 0 }}>
+          <p style={{ 
+            fontSize: 'var(--sys-typography-size-15, 15px)', 
+            color: 'var(--sys-primitives-colors-neutral-neutral-600)', 
+            margin: 0,
+            lineHeight: '1.5'
+          }}>
             Choose a robot to start planning your task sequence
           </p>
         </div>

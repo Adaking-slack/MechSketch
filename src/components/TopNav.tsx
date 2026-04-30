@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Square, Play, Pause, RotateCcw, LogOut, Save, Home, Download } from 'lucide-react';
+import { ChevronDown, ChevronUp, Square, Play, Pause, RotateCcw, LogOut, Save, Home, Download, Settings } from 'lucide-react';
 
 interface TopNavProps {
   projectName?: string;
@@ -15,7 +15,7 @@ interface TopNavProps {
   onSave?: () => void;
   onHome?: () => void;
   onDeleteProject?: () => void;
-  onSettings?: () => void; // Unused, explicitly removed from UI
+  onSettings?: () => void;
   onLogout?: () => void;
   simulationMode?: boolean;
   simulationPaused?: boolean;
@@ -38,6 +38,7 @@ export default function TopNav({
   onSave,
   onHome,
   onDeleteProject,
+  onSettings,
   onLogout,
   simulationMode = false,
   simulationPaused = false,
@@ -295,6 +296,16 @@ export default function TopNav({
 
             {showUserMenu && (
               <div style={styles.userDropdown}>
+                <button
+                  onClick={() => {
+                    setShowUserMenu(false);
+                    onSettings?.();
+                  }}
+                  style={styles.dropdownItem}
+                >
+                  <Settings size={16} />
+                  <span>Settings</span>
+                </button>
                 <button
                   onClick={() => {
                     setShowUserMenu(false);
