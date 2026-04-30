@@ -10,7 +10,7 @@ import TargetPropertiesPanel from '../components/TargetPropertiesPanel';
 import ObjectPropertiesPanel from '../components/ObjectPropertiesPanel';
 import InteractiveObject from '../components/InteractiveObject';
 import { type ActionCardData, type SequenceBlock, type BlockType, getBlockParams } from '../data/robots.data';
-import { loadSelectedRobot, loadProjectName, saveProjectName, loadSelectedObject, loadTargets, addTarget, removeTarget, type Target, type TargetType, getTargetColor, loadObjectState, saveObjectState, type PlacedObject, type ObjectState } from '../utils/robotStorage';
+import { loadSelectedRobot, loadProjectName, saveProjectName, loadSelectedObject, loadTargets, saveTargets, addTarget, removeTarget, type Target, type TargetType, getTargetColor, loadObjectState, saveObjectState, type PlacedObject, type ObjectState, clearSelectedRobot, clearSelectedObject } from '../utils/robotStorage';
 import { initSimState, type SimState, type SimObject, saveSimulation, loadSavedSimulations, loadPendingSimulationState, type SavedSimulation } from '../utils/simState';
 import TargetViewer from '../components/TargetViewer';
 
@@ -955,9 +955,13 @@ simulationRef.current.blockIndex++;
     setSequenceBlocks([]);
     setActiveBlockId(null);
     setTargets([]);
+    saveTargets([]);
     setSelectedTargetId(null);
     setEditingTargetId(null);
     setCurrentSaveId(null);
+
+    clearSelectedRobot();
+    clearSelectedObject();
 
     const emptyObjectState = { objects: [], selectedObjectId: null, newlyAddedObjectId: null };
     setObjectState(emptyObjectState);
@@ -1039,6 +1043,7 @@ simulationRef.current.blockIndex++;
     setShowDeleteProjectModal(false);
     setSequenceBlocks([]);
     setTargets([]);
+    saveTargets([]);
     setCurrentSaveId(null);
     setSimulationMode(false);
     setSimulationPaused(false);

@@ -160,15 +160,8 @@ export default function Landing() {
           minWidth: '300px'
         }}>
           {/* Logo */}
-          <div style={{
-            fontSize: '16px',
-            lineHeight: '25px',
-            letterSpacing: '-0.01em',
-            color: '#ECF5FE',
-            fontWeight: 500,
-            marginBottom: '120x'
-          }}>
-            Mechsketch
+          <div style={{ marginBottom: '120px' }}>
+            <img src="/logo.svg" alt="MechSketch Logo" style={{ height: '20px', objectFit: 'contain' }} />
           </div>
 
           {/* Hero Text */}
@@ -342,7 +335,7 @@ export default function Landing() {
           flexWrap: 'wrap',
           alignItems: 'flex-start',
           justifyContent: 'center',
-          gap: '40px',
+          gap: '24px',
           maxWidth: '1000px',
           width: '100%'
         }}>
@@ -387,7 +380,7 @@ export default function Landing() {
           flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '60px',
+          gap: '48px',
           maxWidth: '1200px',
           width: '100%'
         }}>
@@ -446,10 +439,10 @@ export default function Landing() {
                 fontSize: '15px',
                 fontWeight: 500,
                 lineHeight: '23px',
-                padding: '12px 24px',
-                width: '100%',
+                padding: '12px 20px',
+                width: '60%',
                 border: 'none',
-                borderRadius: '6px',
+                borderRadius: '12px',
                 cursor: 'pointer',
                 transition: 'opacity 0.2s',
               }}
@@ -978,7 +971,9 @@ export default function Landing() {
           backgroundColor: '#001529',
           padding: '24px 64px',
           display: 'flex',
-          alignItems: 'center'
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
           <p style={{
             margin: 0,

@@ -194,14 +194,13 @@ export default function SelectObject() {
             disabled={!selectedId}
             onClick={handleSelect}
             style={{
-              padding: '10px 80px',
+              padding: '12px 120px',
               backgroundColor: '#00376E',
               color: '#ECF5FE',
               border: 'none',
               borderRadius: '12px',
               fontSize: '15px',
-              fontWeight: 500,
-              lineHeight: '23px',
+              fontWeight: 600,
               cursor: 'pointer',
               opacity: selectedId ? 1 : 0.5,
               transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',

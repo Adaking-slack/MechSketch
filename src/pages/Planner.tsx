@@ -2,7 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import type { Robot } from '../data/robots.data';
-import { loadSelectedRobot, saveProjectName } from '../utils/robotStorage';
+import { loadSelectedRobot, saveProjectName, saveTargets, saveObjectState } from '../utils/robotStorage';
 import { loadSavedSimulations, type SavedSimulation } from '../utils/simState';
 
 
@@ -156,6 +156,8 @@ export default function Planner() {
             onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
             onClick={() => {
               saveProjectName(projectName || 'Untitled');
+              saveTargets([]);
+              saveObjectState({ objects: [], selectedObjectId: null, newlyAddedObjectId: null });
               navigate('/home');
             }}
           >

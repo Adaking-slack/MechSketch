@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Square, Play, Pause, RotateCcw, LogOut, Save, Home, Download, Settings } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface TopNavProps {
   projectName?: string;
@@ -55,6 +56,27 @@ export default function TopNav({
   const fileMenuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const [currentUserInitial, setCurrentUserInitial] = useState(userInitial);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && user.email) {
+        setCurrentUserInitial(user.email.charAt(0).toUpperCase());
+      }
+    };
+    fetchUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user?.email) {
+        setCurrentUserInitial(session.user.email.charAt(0).toUpperCase());
+      } else {
+        setCurrentUserInitial(userInitial);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [userInitial]);
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -116,7 +138,7 @@ export default function TopNav({
       <div style={styles.container}>
         {/* Left: Project Name and File Menu */}
         <div style={styles.leftSection}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1px' }}>
             {editing ? (
               <input
                 ref={inputRef}
@@ -135,16 +157,16 @@ export default function TopNav({
             ) : (
               <button
                 onClick={() => setEditing(true)}
-                style={{ 
-                  fontSize: '18px', 
-                  lineHeight: '25px', 
-                  fontWeight: 500, 
-                  color: '#374049', 
-                  background: 'transparent', 
-                  border: 'none', 
-                  cursor: 'pointer', 
-                  whiteSpace: 'nowrap', 
-                  transition: 'opacity 0.15s' 
+                style={{
+                  fontSize: '18px',
+                  lineHeight: '25px',
+                  fontWeight: 600,
+                  color: '#374049',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'opacity 0.15s'
                 }}
                 title="Click to edit project name"
                 onMouseOver={(e) => e.currentTarget.style.opacity = '0.7'}
@@ -153,7 +175,7 @@ export default function TopNav({
                 {projectName}
               </button>
             )}
-            
+
             <div ref={fileMenuRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
               <button
                 onClick={() => setShowFileMenu(!showFileMenu)}
@@ -162,7 +184,7 @@ export default function TopNav({
                 {showFileMenu ? <ChevronUp size={20} color="#374049" /> : <ChevronDown size={20} color="#374049" />}
               </button>
               {showFileMenu && (
-                <div style={{...styles.dropdownMenu, top: '100%', left: '0', marginTop: '4px'}}>
+                <div style={{ ...styles.dropdownMenu, top: '100%', left: '0', marginTop: '4px' }}>
                   {onHome && (
                     <button
                       onClick={() => {
@@ -287,9 +309,9 @@ export default function TopNav({
             onMouseOver={(e) => e.currentTarget.style.opacity = '0.8'}
             onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
           >
-            <span>{robotName || 'No robot selected'}</span>
+            <span>{robotName || 'No robot'}</span>
             <span style={styles.separator}>/</span>
-            <span>{objectName || 'No object selected'}</span>
+            <span>{objectName || 'No object'}</span>
           </button>
 
           <div style={{ position: 'relative' }} ref={userMenuRef}>
@@ -299,7 +321,7 @@ export default function TopNav({
               onMouseOver={(e) => e.currentTarget.style.opacity = '0.8'}
               onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
             >
-              <div style={styles.avatar}>{userInitial}</div>
+              <div style={styles.avatar}>{currentUserInitial}</div>
               {showUserMenu ? <ChevronUp size={24} color="#000000" /> : <ChevronDown size={24} color="#000000" />}
             </button>
 
