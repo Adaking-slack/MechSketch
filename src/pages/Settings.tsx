@@ -2,16 +2,38 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Settings.css';
 
+
+type SectionType = 'profile' | 'password' | 'security' | 'notifications' | 'appearance' | 'help';
+
+
+interface SectionConfig {
+  id: SectionType;
+  label: string;
+  title: string;
+  subtitle: string;
+}
+
+
+const SECTIONS: SectionConfig[] = [
+  { id: 'profile', label: 'Profile Settings', title: 'Profile Settings', subtitle: 'View and update your personal information' },
+  { id: 'password', label: 'Password Settings', title: 'Password Settings', subtitle: 'Securely change your password' },
+  { id: 'security', label: 'Security Settings', title: 'Security Settings', subtitle: 'Manage your account security options' },
+  { id: 'notifications', label: 'Notifications', title: 'Notifications', subtitle: 'Control your notification preferences' },
+  { id: 'appearance', label: 'Appearance', title: 'Appearance', subtitle: 'Control visual theme and styling preferences' },
+  { id: 'help', label: 'Help & Support', title: 'Help & Support', subtitle: 'Access support and assistance' },
+];
+
+
 function Toggle({ label, checked, onChange, isRadio = false, name }: { label: string, checked: boolean, onChange: () => void, isRadio?: boolean, name?: string }) {
   return (
     <label className="settings-toggle-label">
       <span className="settings-toggle-text">{label}</span>
-      <input 
-        type={isRadio ? "radio" : "checkbox"} 
+      <input
+        type={isRadio ? "radio" : "checkbox"}
         name={name}
-        className="settings-toggle-input" 
-        checked={checked} 
-        onChange={onChange} 
+        className="settings-toggle-input"
+        checked={checked}
+        onChange={onChange}
       />
       <div className="settings-toggle-track">
         <div className="settings-toggle-thumb" />
@@ -20,28 +42,32 @@ function Toggle({ label, checked, onChange, isRadio = false, name }: { label: st
   );
 }
 
+
 function ProfileSettings() {
   const [name, setName] = useState('Jane Doe');
   const [email] = useState('jane.doe@mechsketch.com');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+
   const handleSave = () => {
     setError('');
     setSuccess(false);
+
 
     if (!name.trim()) {
       setError('This field is required');
       return;
     }
 
+
     setSuccess(true);
     setTimeout(() => setSuccess(false), 3000);
   };
 
+
   return (
-    <div className="settings-section">
-      <h2 className="settings-section-title">Profile Settings</h2>
+    <div className="settings-section-content">
       <div className="settings-form">
         <div className="settings-field">
           <label className="settings-label" htmlFor="profile-name">
@@ -78,6 +104,7 @@ function ProfileSettings() {
   );
 }
 
+
 function PasswordSettings() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -85,9 +112,11 @@ function PasswordSettings() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+
   const handleUpdate = () => {
     setError('');
     setSuccess(false);
+
 
     if (!currentPassword) {
       setError('This field is required');
@@ -102,22 +131,25 @@ function PasswordSettings() {
       return;
     }
 
+
     if (currentPassword === 'wrong') {
       setError('Incorrect current password');
       return;
     }
+
 
     setSuccess(true);
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
 
+
     setTimeout(() => setSuccess(false), 3000);
   };
 
+
   return (
-    <div className="settings-section">
-      <h2 className="settings-section-title">Password Settings</h2>
+    <div className="settings-section-content">
       <div className="settings-form">
         <div className="settings-field">
           <label className="settings-label" htmlFor="current-password">
@@ -165,40 +197,77 @@ function PasswordSettings() {
   );
 }
 
-function AppearanceSettings() {
-  const [theme, setTheme] = useState('light');
+
+function SecuritySettings() {
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [twoFactor, setTwoFactor] = useState(false);
+  const navigate = useNavigate();
+
+
+  const handleLogout = () => {
+    navigate('/auth?view=login');
+  };
+
 
   return (
-    <div className="settings-section">
-      <h2 className="settings-section-title">Appearance Settings</h2>
+    <div className="settings-section-content">
       <div className="settings-form">
+        <div className="settings-toggle-group">
+          <Toggle label="Two-Factor Authentication" checked={twoFactor} onChange={() => setTwoFactor(!twoFactor)} />
+          <p className="settings-field-helper">Verify your identity using a secondary security method.</p>
+        </div>
+
         <div className="settings-field">
-          <Toggle 
-            label="Light Mode" 
-            isRadio 
-            name="theme" 
-            checked={theme === 'light'} 
-            onChange={() => setTheme('light')} 
-          />
-          <Toggle 
-            label="Dark Mode" 
-            isRadio 
-            name="theme" 
-            checked={theme === 'dark'} 
-            onChange={() => setTheme('dark')} 
-          />
-          <Toggle 
-            label="System Default" 
-            isRadio 
-            name="theme" 
-            checked={theme === 'system'} 
-            onChange={() => setTheme('system')} 
-          />
+          <h3 className="settings-subsection-title">Active Sessions</h3>
+          <p className="settings-subsection-description">Manage where you’re currently logged in and sign out from other devices.</p>
+          <div className="settings-placeholder">
+            <p>No other active sessions found.</p>
+          </div>
+        </div>
+
+
+        <div className="settings-field security-action-section">
+          <button
+            type="button"
+            className="settings-button-danger-outline"
+            onClick={() => setShowLogoutModal(true)}
+          >
+            Log out of all devices
+          </button>
         </div>
       </div>
+
+
+      {showLogoutModal && (
+        <div className="settings-modal-overlay" onClick={() => setShowLogoutModal(false)}>
+          <div className="settings-modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3 className="settings-modal-title">Log out of all devices?</h3>
+            <p className="settings-modal-text">
+              You will be signed out of all active sessions on other devices. You'll need to log back in to access your account.
+            </p>
+            <div className="settings-modal-actions">
+              <button
+                type="button"
+                className="settings-button-secondary"
+                onClick={() => setShowLogoutModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="settings-button-danger"
+                onClick={handleLogout}
+              >
+                Log out everywhere
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 function NotificationsSettings() {
   const [email, setEmail] = useState(true);
@@ -206,16 +275,17 @@ function NotificationsSettings() {
   const [updates, setUpdates] = useState(true);
   const [success, setSuccess] = useState(false);
 
+
   const handleSave = () => {
     setSuccess(true);
     setTimeout(() => setSuccess(false), 3000);
   };
 
+
   return (
-    <div className="settings-section">
-      <h2 className="settings-section-title">Notifications Settings</h2>
+    <div className="settings-section-content">
       <div className="settings-form">
-        <div className="settings-field">
+        <div className="settings-toggle-group">
           <Toggle label="Email Notifications" checked={email} onChange={() => setEmail(!email)} />
           <Toggle label="Push Notifications" checked={push} onChange={() => setPush(!push)} />
           <Toggle label="Product Updates" checked={updates} onChange={() => setUpdates(!updates)} />
@@ -229,66 +299,100 @@ function NotificationsSettings() {
   );
 }
 
-function SecuritySettings() {
-  const [confirming, setConfirming] = useState(false);
-  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    navigate('/auth?view=login');
-  };
+function AppearanceSettings() {
+  const [theme, setTheme] = useState('system');
+  const [spacing, setSpacing] = useState('comfortable');
+
 
   return (
-    <div className="settings-section">
-      <h2 className="settings-section-title">Security Settings</h2>
+    <div className="settings-section-content">
       <div className="settings-form">
-        {!confirming ? (
-          <button 
-            type="button" 
-            className="settings-button-danger" 
-            onClick={() => setConfirming(true)}
-          >
-            Log out of all devices
-          </button>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <span className="settings-error-text" style={{ textAlign: 'center', marginBottom: '8px' }}>
-              Are you sure you want to log out everywhere?
-            </span>
-            <button 
-              type="button" 
-              className="settings-button-danger" 
-              style={{ backgroundColor: 'var(--sys-primitives-colors-error-error-600)', color: 'white' }}
-              onClick={handleLogout}
-            >
-              Yes, log out
-            </button>
-            <button 
-              type="button" 
-              className="settings-button-secondary" 
-              style={{ marginTop: 0 }}
-              onClick={() => setConfirming(false)}
-            >
-              Cancel
-            </button>
+        <div className="settings-field">
+          <h3 className="settings-subsection-title">Theme</h3>
+          <div className="settings-toggle-group">
+            <Toggle
+              label="Light Mode"
+              isRadio
+              name="theme"
+              checked={theme === 'light'}
+              onChange={() => setTheme('light')}
+            />
+            <Toggle
+              label="Dark Mode"
+              isRadio
+              name="theme"
+              checked={theme === 'dark'}
+              onChange={() => setTheme('dark')}
+            />
+            <Toggle
+              label="System Default"
+              isRadio
+              name="theme"
+              checked={theme === 'system'}
+              onChange={() => setTheme('system')}
+            />
           </div>
-        )}
+        </div>
+        <div className="settings-field">
+          <h3 className="settings-subsection-title">Spacing</h3>
+          <div className="settings-toggle-group">
+            <Toggle
+              label="Compact"
+              isRadio
+              name="spacing"
+              checked={spacing === 'compact'}
+              onChange={() => setSpacing('compact')}
+            />
+            <Toggle
+              label="Comfortable"
+              isRadio
+              name="spacing"
+              checked={spacing === 'comfortable'}
+              onChange={() => setSpacing('comfortable')}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
+
 function HelpSupportSettings() {
+  const navigate = useNavigate();
+
+
   const handleContact = () => {
     window.location.href = 'mailto:support@mechsketch.com';
   };
 
+
+  const handleReportBug = () => {
+    window.location.href = 'mailto:support@mechsketch.com?subject=Bug%20Report';
+  };
+
+
   return (
-    <div className="settings-section">
-      <h2 className="settings-section-title">Help & Support</h2>
+    <div className="settings-section-content">
       <div className="settings-form">
-        <button type="button" className="settings-button-secondary" onClick={handleContact}>
-          Contact Support
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sys-tokens-spacing-spacing-md)' }}>
+          <button type="button" className="settings-button-secondary" onClick={handleContact} style={{ marginTop: 0 }}>
+            Contact Support
+          </button>
+          <button type="button" className="settings-button-secondary" onClick={handleReportBug} style={{ marginTop: 0 }}>
+            Report a Bug
+          </button>
+        </div>
+        <p className="settings-support-text">
+          <button
+            className="settings-support-link"
+            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 'inherit' }}
+            onClick={() => navigate('/faq')}
+          >
+            FAQs
+          </button>
+        </p>
         <p className="settings-support-text">
           Have an issue? Email us directly at{' '}
           <a href="mailto:support@mechsketch.com" className="settings-support-link">
@@ -300,17 +404,48 @@ function HelpSupportSettings() {
   );
 }
 
+
 export default function Settings() {
+  const [activeSection, setActiveSection] = useState<SectionType>('profile');
+
+
+  const activeConfig = SECTIONS.find(s => s.id === activeSection) || SECTIONS[0];
+
+
   return (
     <div className="settings-container">
-      <div className="settings-content">
-        <ProfileSettings />
-        <PasswordSettings />
-        <AppearanceSettings />
-        <NotificationsSettings />
-        <SecuritySettings />
-        <HelpSupportSettings />
+      <div className="settings-layout">
+        <aside className="settings-sidebar">
+          <nav className="settings-sidebar-nav">
+            {SECTIONS.map((section) => (
+              <button
+                key={section.id}
+                className={`settings-sidebar-item ${activeSection === section.id ? 'active' : ''}`}
+                onClick={() => setActiveSection(section.id)}
+              >
+                {section.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
+        <main className="settings-main">
+          <div className="settings-header">
+            <h1 className="settings-title">{activeConfig.title}</h1>
+            <p className="settings-subtitle">{activeConfig.subtitle}</p>
+          </div>
+          <div className="settings-content">
+            <div className={`settings-panel ${activeSection === 'profile' ? 'active' : ''}`}><ProfileSettings /></div>
+            <div className={`settings-panel ${activeSection === 'password' ? 'active' : ''}`}><PasswordSettings /></div>
+            <div className={`settings-panel ${activeSection === 'security' ? 'active' : ''}`}><SecuritySettings /></div>
+            <div className={`settings-panel ${activeSection === 'notifications' ? 'active' : ''}`}><NotificationsSettings /></div>
+            <div className={`settings-panel ${activeSection === 'appearance' ? 'active' : ''}`}><AppearanceSettings /></div>
+            <div className={`settings-panel ${activeSection === 'help' ? 'active' : ''}`}><HelpSupportSettings /></div>
+          </div>
+        </main>
       </div>
     </div>
   );
 }
+
+
+
