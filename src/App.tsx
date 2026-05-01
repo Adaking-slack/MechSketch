@@ -11,22 +11,18 @@ import './App.css';
 
 function App() {
   return (
-    <Router>
-      <Router basename="/MechSketch">
-
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/select-robot" element={<SelectRobot />} />
-          <Route path="/select-object" element={<SelectObject />} />
-          <Route path="/planner" element={<Planner />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/faq" element={<Faq />} />      </Routes>
-      </Router>
-
+    <Router basename="/MechSketch">
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/select-robot" element={<SelectRobot />} />
+        <Route path="/select-object" element={<SelectObject />} />
+        <Route path="/planner" element={<Planner />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/faq" element={<Faq />} />
+      </Routes>
     </Router>
   );
 }
-
 export default App;
