@@ -165,7 +165,7 @@ export default function Landing() {
           </div>
 
           {/* Hero Text */}
-          <div style={{ marginTop: '120px', marginBottom: 'auto', maxWidth: '100%' }}>
+          <div style={{ marginTop: '40px', marginBottom: 'auto', maxWidth: '100%' }}>
             <h1 style={{
               fontSize: 'clamp(32px, 5vw, 56px)',
               lineHeight: '1.2',
