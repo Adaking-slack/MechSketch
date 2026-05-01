@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import OtpModal from '../components/otp/OtpModal';
 import './Settings.css';
 
 
@@ -111,6 +113,7 @@ function PasswordSettings() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
 
 
   const handleUpdate = () => {
@@ -137,12 +140,15 @@ function PasswordSettings() {
       return;
     }
 
+    // Trigger OTP Verification before proceeding
+    setShowOtpModal(true);
+  };
 
+  const finalizePasswordUpdate = () => {
     setSuccess(true);
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
-
 
     setTimeout(() => setSuccess(false), 3000);
   };
@@ -193,6 +199,14 @@ function PasswordSettings() {
         </button>
         {success && <div className="settings-success-text">Password updated successfully</div>}
       </div>
+
+      <OtpModal 
+        email="jane.doe@mechsketch.com"
+        actionType="password_reset"
+        isOpen={showOtpModal}
+        onClose={() => setShowOtpModal(false)}
+        onSuccess={finalizePasswordUpdate}
+      />
     </div>
   );
 }
@@ -200,11 +214,18 @@ function PasswordSettings() {
 
 function SecuritySettings() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
   const [twoFactor, setTwoFactor] = useState(false);
   const navigate = useNavigate();
 
 
   const handleLogout = () => {
+    // Hide native modal and show generic OTP Modal instead
+    setShowLogoutModal(false);
+    setShowOtpModal(true);
+  };
+  
+  const finishLogout = () => {
     navigate('/auth?view=login');
   };
 
@@ -264,6 +285,14 @@ function SecuritySettings() {
           </div>
         </div>
       )}
+
+      <OtpModal 
+        email="jane.doe@mechsketch.com"
+        actionType="security_action"
+        isOpen={showOtpModal}
+        onClose={() => setShowOtpModal(false)}
+        onSuccess={finishLogout}
+      />
     </div>
   );
 }
@@ -407,14 +436,28 @@ function HelpSupportSettings() {
 
 export default function Settings() {
   const [activeSection, setActiveSection] = useState<SectionType>('profile');
+  const navigate = useNavigate();
 
+  const handleBack = () => {
+    if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+    } else {
+      navigate('/workspace');
+    }
+  };
 
   const activeConfig = SECTIONS.find(s => s.id === activeSection) || SECTIONS[0];
 
-
   return (
     <div className="settings-container">
+
       <div className="settings-layout">
+        <div className="settings-back-wrapper">
+          <button className="settings-back-button" onClick={handleBack}>
+            <ArrowLeft size={16} />
+            <span style={{ fontSize: '13px' }}>Back</span>
+          </button>
+        </div>
         <aside className="settings-sidebar">
           <nav className="settings-sidebar-nav">
             {SECTIONS.map((section) => (

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import OtpModal from '../components/otp/OtpModal';
 
 type View = 'login' | 'signup';
 
@@ -332,6 +333,21 @@ export default function Auth() {
   const [emailError, setEmailError] = useState<string | undefined>();
   const [passwordError, setPasswordError] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+
+  const handleOtpSuccess = async () => {
+    setLoading(true);
+    if (view === 'signup') {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) setEmailError(error.message);
+      else navigate('/select-robot');
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) setEmailError(error.message);
+      else navigate('/select-robot');
+    }
+    setLoading(false);
+  };
 
   const handleOAuth = async (provider: 'google') => {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -354,21 +370,9 @@ export default function Auth() {
       setPasswordError('Password is required');
       return;
     }
-    setLoading(true);
 
-    if (view === 'signup') {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      if (error) setEmailError(error.message);
-      else navigate('/select-robot');
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setEmailError(error.message);
-      else navigate('/select-robot');
-    }
-    setLoading(false);
+    // Immediately trigger OTP Verification before processing Supabase Auth
+    setShowOtpModal(true);
   };
 
   return (
@@ -511,9 +515,17 @@ export default function Auth() {
                 </span>
               </div>
             </motion.div>
-          </AnimatePresence>
+            </AnimatePresence>
+          </div>
         </div>
+        
+        <OtpModal 
+          email={email}
+          actionType="login"
+          isOpen={showOtpModal}
+          onClose={() => setShowOtpModal(false)}
+          onSuccess={handleOtpSuccess}
+        />
       </div>
-    </div>
   );
 }
