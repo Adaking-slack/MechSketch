@@ -9,8 +9,8 @@ import { SkeletonUtils } from 'three-stdlib';
 import type { Target, PlacedObject } from '../utils/robotStorage';
 import type { SimState, SimObject } from '../utils/simState';
 
-class ErrorBoundary extends Component<{children: ReactNode, fallback: ReactNode}, {hasError: boolean}> {
-  constructor(props: {children: ReactNode, fallback: ReactNode}) {
+class ErrorBoundary extends Component<{ children: ReactNode, fallback: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode, fallback: ReactNode }) {
     super(props);
     this.state = { hasError: false };
   }
@@ -123,8 +123,8 @@ const _vToEnd = new THREE.Vector3();
 const _vToGoal = new THREE.Vector3();
 const _vAxis = new THREE.Vector3();
 const _vEndPos = new THREE.Vector3();
-const _vJawA = new THREE.Vector3();
-const _vJawB = new THREE.Vector3();
+// const _vJawA = new THREE.Vector3();
+// const _vJawB = new THREE.Vector3();
 const _vAttach = new THREE.Vector3();
 const _vIkGoal = new THREE.Vector3();
 const _qWorld = new THREE.Quaternion();
