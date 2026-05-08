@@ -1,21 +1,16 @@
 import { useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import RobotCarousel from '../components/RobotCarousel';
 import { clearSelectedRobot } from '../utils/robotStorage';
 
 export default function SelectRobot() {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleSkip = useCallback(() => {
     clearSelectedRobot();
-    navigate('/select-object', {
-      state: {
-        flowType: location.state?.flowType
-      }
-    });
-  }, [navigate, location.state?.flowType]);
+    navigate('/home');
+  }, [navigate]);
 
   return (
     <div style={{

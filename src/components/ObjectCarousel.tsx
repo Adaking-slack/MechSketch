@@ -14,7 +14,7 @@ export default function ObjectCarousel() {
 
   const handleSelect = useCallback((object: typeof objectsData[0]) => {
     saveSelectedObject(object);
-    navigate('/planner');
+    navigate('/home');
   }, [navigate]);
 
   const handleNext = useCallback(() => {

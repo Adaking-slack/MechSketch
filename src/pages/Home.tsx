@@ -1052,7 +1052,7 @@ simulationRef.current.blockIndex++;
     const emptyObjectState = { objects: [], selectedObjectId: null, newlyAddedObjectId: null };
     setObjectState(emptyObjectState);
     saveObjectState(emptyObjectState);
-    navigate('/planner');
+    navigate('/home');
   }, [projectName, navigate]);
 
   const handleDeleteProjectCancel = useCallback(() => {
@@ -1175,7 +1175,7 @@ simulationRef.current.blockIndex++;
         onSettings={handleSettings}
         onLogout={handleLogout}
         onSave={handleSave}
-        onHome={() => navigate('/planner')}
+        onHome={() => navigate('/home')}
         onDeleteProject={handleDeleteProjectClick}
         canSave={canSave}
         simulationMode={simulationMode}
@@ -1229,7 +1229,24 @@ simulationRef.current.blockIndex++;
               )}
             </div>
           ) : (
-            <div style={{ color: '#94a3b8', fontWeight: 500, fontSize: '14px' }}>Select a robot to begin</div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8' }}>
+              <div style={{ fontWeight: 500, fontSize: '16px', marginBottom: '16px', color: '#1a1a1a' }}>No robot selected</div>
+              <button
+                onClick={() => navigate('/select-robot')}
+                style={{
+                  padding: '10px 24px',
+                  backgroundColor: '#00376E',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer'
+                }}
+              >
+                Select a Robot
+              </button>
+            </div>
           )}
         </main>
 

@@ -18,7 +18,7 @@ export default function SelectObject() {
       if (location.state?.flowType === 'editing') {
         navigate('/home');
       } else {
-        navigate('/planner');
+        navigate('/home');
       }
     }
   }, [selectedId, navigate, location.state?.flowType]);
@@ -29,7 +29,7 @@ export default function SelectObject() {
     if (location.state?.flowType === 'editing') {
       navigate('/home');
     } else {
-      navigate('/planner');
+      navigate('/home');
     }
   }, [navigate, location.state?.flowType]);
 

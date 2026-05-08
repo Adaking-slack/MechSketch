@@ -335,18 +335,8 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
 
-  const handleOtpSuccess = async () => {
-    setLoading(true);
-    if (view === 'signup') {
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) setEmailError(error.message);
-      else navigate('/select-robot');
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setEmailError(error.message);
-      else navigate('/select-robot');
-    }
-    setLoading(false);
+  const handleOtpSuccess = () => {
+    navigate('/select-robot');
   };
 
   const handleOAuth = async (provider: 'google') => {
@@ -371,8 +361,25 @@ export default function Auth() {
       return;
     }
 
-    // Immediately trigger OTP Verification before processing Supabase Auth
-    setShowOtpModal(true);
+    setLoading(true);
+
+    if (view === 'signup') {
+      const { error } = await supabase.auth.signUp({ email, password });
+      setLoading(false);
+      if (error) {
+        setEmailError(error.message);
+      } else {
+        setShowOtpModal(true);
+      }
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      setLoading(false);
+      if (error) {
+        setEmailError(error.message);
+      } else {
+        navigate('/select-robot');
+      }
+    }
   };
 
   return (
@@ -521,7 +528,7 @@ export default function Auth() {
         
         <OtpModal 
           email={email}
-          actionType="login"
+          actionType="signup"
           isOpen={showOtpModal}
           onClose={() => setShowOtpModal(false)}
           onSuccess={handleOtpSuccess}

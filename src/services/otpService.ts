@@ -1,52 +1,49 @@
-export type ActionType = 'login' | 'password_reset' | 'security_action';
+import { supabase } from '../lib/supabase';
+
+export type ActionType = 'login' | 'password_reset' | 'security_action' | 'signup';
 
 export interface OtpResponse {
   success: boolean;
   message: string;
 }
 
-const API_BASE_URL = 'http://localhost:3000/api/otp';
-
 export const otpService = {
   async requestOtp(email: string, actionType: ActionType): Promise<OtpResponse> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/request`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, actionType }),
-      });
-      return await response.json();
-    } catch (error) {
-      console.error('Request OTP Error:', error);
-      return { success: false, message: 'Network error occurred.' };
+    // For signup, the initial signUp call already sends the OTP.
+    if (actionType === 'signup') {
+      return { success: true, message: 'OTP already sent.' };
     }
+    return this.resendOtp(email, actionType);
   },
 
   async verifyOtp(email: string, otp: string, actionType: ActionType): Promise<OtpResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp, actionType }),
+      const type = actionType === 'signup' ? 'signup' : 'email';
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: type as any,
       });
-      return await response.json();
-    } catch (error) {
+      if (error) throw error;
+      return { success: true, message: 'Verified successfully' };
+    } catch (error: any) {
       console.error('Verify OTP Error:', error);
-      return { success: false, message: 'Network error occurred.' };
+      return { success: false, message: error.message || 'Verification failed.' };
     }
   },
 
   async resendOtp(email: string, actionType: ActionType): Promise<OtpResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/resend`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, actionType }),
+      const type = actionType === 'signup' ? 'signup' : 'magiclink';
+      const { error } = await supabase.auth.resend({
+        type: type as any,
+        email,
       });
-      return await response.json();
-    } catch (error) {
+      if (error) throw error;
+      return { success: true, message: 'OTP sent successfully' };
+    } catch (error: any) {
       console.error('Resend OTP Error:', error);
-      return { success: false, message: 'Network error occurred.' };
+      return { success: false, message: error.message || 'Failed to resend.' };
     }
   }
 };

@@ -42,7 +42,7 @@ export default function RobotCard({ robot, objectData, isActive, offset, onSelec
       }}
       transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
       whileHover={isActive ? { scale: 1.01, y: `calc(-50% - 6px)`, boxShadow: '0 28px 48px rgba(0,0,0,0.12)' } : {}}
-      onClick={() => isActive && onSelect()}
+
       style={{
         position: 'absolute',
         top: '50%',
@@ -60,7 +60,7 @@ export default function RobotCard({ robot, objectData, isActive, offset, onSelec
         transformOrigin: 'center center',
         padding: '32px',
         boxSizing: 'border-box',
-        cursor: isActive ? 'pointer' : 'default'
+        cursor: 'default'
       }}
     >
       {/* 3D Viewer */}
@@ -140,16 +140,21 @@ export default function RobotCard({ robot, objectData, isActive, offset, onSelec
             {robot?.specs || objectData?.specs}
           </p>
           <div style={{ width: '100%', marginTop: 'auto', paddingTop: '24px', display: 'flex', justifyContent: 'center' }}>
-            <span style={{
-              padding: '12px 120px',
-              backgroundColor: '#00376E',
-              color: '#ECF5FE',
-              borderRadius: '12px',
-              fontSize: '15px',
-              fontWeight: 600
-            }}>
+            <button 
+              onClick={onSelect}
+              style={{
+                padding: '12px 120px',
+                backgroundColor: '#00376E',
+                color: '#ECF5FE',
+                borderRadius: '12px',
+                fontSize: '15px',
+                fontWeight: 600,
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
               {objectData ? 'Select Object' : 'Select Robot'}
-            </span>
+            </button>
           </div>
         </motion.div>
       )}
