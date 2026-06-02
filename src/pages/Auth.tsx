@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import OtpModal from '../components/otp/OtpModal';
+import './Auth.css';
 
 type View = 'login' | 'signup';
 
@@ -76,11 +77,11 @@ function InputField({
           style={{
             width: '100%',
             padding: `14px 16px 14px ${icon ? '44px' : '16px'}`,
-            background: '#F6F8FA', // Matching the image's light grey input background
+            background: '#F6F8FA',
             border: `1px solid ${error ? '#ef4444' : 'transparent'}`,
             borderRadius: '8px',
             fontSize: '14px',
-            fontFamily: 'Helvetica Neue, -apple-system, sans-serif',
+            fontFamily: 'inherit',
             color: '#374049',
             outline: 'none',
             boxSizing: 'border-box',
@@ -166,7 +167,7 @@ function PrimaryButton({
         borderRadius: '8px',
         fontSize: '14px',
         fontWeight: 500,
-        fontFamily: 'Helvetica Neue, -apple-system, sans-serif',
+        fontFamily: 'inherit',
         cursor: disabled ? 'not-allowed' : 'pointer',
         transition: 'opacity 0.2s',
       }}
@@ -196,7 +197,7 @@ function GoogleButton({ onClick }: { onClick: () => void }) {
         borderRadius: '8px',
         fontSize: '14px',
         fontWeight: 500,
-        fontFamily: 'Helvetica Neue, -apple-system, sans-serif',
+        fontFamily: 'inherit',
         cursor: 'pointer',
         transition: 'opacity 0.2s',
       }}
@@ -383,65 +384,22 @@ export default function Auth() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      width: '100%',
-      background: '#F6F7F9',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px',
-      boxSizing: 'border-box',
-      fontFamily: 'Helvetica Neue, -apple-system, sans-serif',
-      color: '#001529',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
+    <div className="auth-container">
       <GridBackground />
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '32px',
-        width: '100%',
-        maxWidth: '440px',
-        position: 'relative',
-        zIndex: 1,
-      }}>
+      <div className="auth-stack">
         <img
           src="/logo-small.png"
           alt="MechSketch"
-          style={{ height: '32px' }}
+          className="auth-logo"
         />
-        <div style={{
-          width: '100%',
-          background: '#FFFFFF',
-          borderRadius: '16px',
-          padding: '40px',
-          boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.04), 0px 2px 6px rgba(0, 0, 0, 0.02)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '24px',
-        }}>
+        <div className="auth-card">
 
           {/* Header inside Card */}
-          <div style={{ textAlign: 'center' }}>
-            <h1 style={{
-              margin: '0 0 12px 0',
-              fontSize: '28px',
-              lineHeight: '32px',
-              letterSpacing: '-0.5px',
-              fontWeight: 500,
-              color: '#001529',
-            }}>
+          <div className="auth-header">
+            <h1 className="auth-title">
               {view === 'login' ? 'Welcome back' : 'Sign up with email'}
             </h1>
-            <p style={{
-              margin: 0,
-              fontSize: '15px',
-              lineHeight: '25px',
-              color: '#374049',
-            }}>
+            <p className="auth-subtitle">
               Build, test, and refine robot task sequences using an interactive 3D environment.
             </p>
           </div>
@@ -453,9 +411,9 @@ export default function Auth() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+              className="auth-form"
             >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="auth-input-group">
                 <InputField
                   placeholder="Email"
                   value={email}
@@ -472,18 +430,9 @@ export default function Auth() {
                     icon={<LockIcon />}
                   />
                   {view === 'login' && (
-                    <div style={{ textAlign: 'right', marginTop: '8px' }}>
+                    <div className="auth-forgot-password-container">
                       <button
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          padding: 0,
-                          color: '#00376E',
-                          cursor: 'pointer',
-                          fontSize: '13px',
-                          fontWeight: 500,
-                          fontFamily: 'Helvetica Neue, -apple-system, sans-serif'
-                        }}
+                        className="auth-forgot-password-link"
                         onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
                         onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                       >
@@ -505,15 +454,11 @@ export default function Auth() {
               <GoogleButton onClick={() => handleOAuth('google')} />
 
               <div style={{ textAlign: 'center', marginTop: '4px' }}>
-                <span style={{ fontSize: '13px', color: '#374049' }}>
+                <span className="auth-switch-text">
                   {view === 'login' ? "Don't have an account? " : "Already have an account? "}
                   <button
+                    className="auth-switch-btn"
                     onClick={() => { setError(undefined); setEmailError(undefined); setPasswordError(undefined); setView(view === 'login' ? 'signup' : 'login'); }}
-                    style={{
-                      background: 'none', border: 'none', padding: 0,
-                      color: '#00376E', cursor: 'pointer', fontWeight: 600,
-                      fontSize: '13px'
-                    }}
                     onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
                     onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                   >
@@ -522,17 +467,17 @@ export default function Auth() {
                 </span>
               </div>
             </motion.div>
-            </AnimatePresence>
-          </div>
+          </AnimatePresence>
         </div>
-        
-        <OtpModal 
-          email={email}
-          actionType="signup"
-          isOpen={showOtpModal}
-          onClose={() => setShowOtpModal(false)}
-          onSuccess={handleOtpSuccess}
-        />
       </div>
+      
+      <OtpModal 
+        email={email}
+        actionType="signup"
+        isOpen={showOtpModal}
+        onClose={() => setShowOtpModal(false)}
+        onSuccess={handleOtpSuccess}
+      />
+    </div>
   );
 }

@@ -1,112 +1,56 @@
 import { useState, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { objectsData } from '../data/objects.data';
 import ObjectViewer from '../components/ObjectViewer';
 import { saveSelectedObject, clearSelectedObject } from '../utils/robotStorage';
+import './Selection.css';
 
 export default function SelectObject() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleSelect = useCallback(() => {
     const selected = objectsData.find(obj => obj.id === selectedId);
     if (selected) {
       saveSelectedObject(selected);
-      if (location.state?.flowType === 'editing') {
-        navigate('/home');
-      } else {
-        navigate('/home');
-      }
+      navigate('/home');
     }
-  }, [selectedId, navigate, location.state?.flowType]);
+  }, [selectedId, navigate]);
 
   const handleSkip = useCallback(() => {
-    // Navigate without saving an object
     clearSelectedObject();
-    if (location.state?.flowType === 'editing') {
-      navigate('/home');
-    } else {
-      navigate('/home');
-    }
-  }, [navigate, location.state?.flowType]);
+    navigate('/home');
+  }, [navigate]);
 
   return (
-    <div style={{
-      width: '100vw',
-      minHeight: '100vh',
-      backgroundColor: '#F6F7F9',
-      display: 'flex',
-      flexDirection: 'column',
-      fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-      overflowX: 'hidden',
-      overflowY: 'auto'
-    }}>
+    <div className="selection-container" style={{ backgroundColor: '#F6F7F9' }}>
       {/* Top Navigation & Header */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
-        alignItems: 'center',
-        padding: '24px 32px',
-        zIndex: 30
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+      <div className="selection-header">
+        <div className="selection-header-left">
           <button
             onClick={() => navigate(-1)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '13px',
-              lineHeight: '18px',
-              color: '#374049',
-              padding: 0
-            }}
+            className="back-btn"
           >
             <ArrowLeft size={16} />
             Back
           </button>
         </div>
 
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{
-            fontSize: '22px',
-            lineHeight: '31px',
-            letterSpacing: '-1px',
-            fontWeight: 600,
-            color: '#374049',
-            margin: '0 0 8px 0'
-          }}>
+        <div className="selection-header-center">
+          <h1 className="selection-title">
             Select an Object
           </h1>
-          <p style={{
-            fontSize: '15px',
-            lineHeight: '23px',
-            fontWeight: 400,
-            color: '#374049',
-            margin: 0
-          }}>
+          <p className="selection-subtitle">
             Choose an object your robot will interact with in the scene.
           </p>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <div className="selection-header-right">
           <button
             onClick={handleSkip}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '13px',
-              lineHeight: '18px',
-              color: '#374049',
-              padding: 0
-            }}
+            className="skip-btn"
           >
             Skip for now
           </button>
@@ -114,29 +58,14 @@ export default function SelectObject() {
       </div>
 
       {/* Main Content */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '12px 24px',
-        overflowY: 'auto'
-      }}>
+      <div className="selection-content">
         {objectsData.length === 0 ? (
           <div style={{ color: '#888', textAlign: 'center', marginTop: '40px' }}>
             <p>No objects available</p>
             <p>Upload or generate objects to begin</p>
           </div>
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '24px',
-            maxWidth: '1000px',
-            width: '100%',
-            justifyContent: 'center'
-          }}>
+          <div className="object-grid">
             {objectsData.map((obj) => {
               const isSelected = selectedId === obj.id;
               return (
@@ -189,30 +118,11 @@ export default function SelectObject() {
         )}
 
         {/* Continue Button */}
-        <div style={{ width: '100%', marginTop: '32px', marginBottom: '48px', paddingTop: '24px', display: 'flex', justifyContent: 'center' }}>
+        <div className="continue-btn-container">
           <button
             disabled={!selectedId}
             onClick={handleSelect}
-            style={{
-              padding: '12px 120px',
-              backgroundColor: '#00376E',
-              color: '#ECF5FE',
-              border: 'none',
-              borderRadius: '12px',
-              fontSize: '15px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              opacity: selectedId ? 1 : 0.5,
-              transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
-            }}
-            onMouseOver={(e) => {
-              if (selectedId) {
-                e.currentTarget.style.backgroundColor = '#012950';
-              }
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = '#00376E';
-            }}
+            className="continue-btn"
           >
             Continue
           </button>

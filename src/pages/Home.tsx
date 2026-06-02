@@ -13,6 +13,7 @@ import { type ActionCardData, type SequenceBlock, type BlockType, getBlockParams
 import { loadSelectedRobot, loadProjectName, saveProjectName, loadSelectedObject, loadTargets, saveTargets, addTarget, removeTarget, type Target, type TargetType, getTargetColor, loadObjectState, saveObjectState, type PlacedObject, type ObjectState, clearSelectedRobot, clearSelectedObject } from '../utils/robotStorage';
 import { initSimState, type SimState, type SimObject, saveSimulation, loadSavedSimulations, loadPendingSimulationState, type SavedSimulation } from '../utils/simState';
 import TargetViewer from '../components/TargetViewer';
+import './Home.css';
 
 export default function Home() {
   const [leftOpen, setLeftOpen] = useState(true);
@@ -1163,7 +1164,7 @@ simulationRef.current.blockIndex++;
   }, [projectName, selectedRobot, selectedObject, targets, sequenceBlocks]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100vw', height: '100vh', backgroundColor: '#f7f8f9', overflow: 'hidden', fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif' }}>
+    <div className="home-container">
       <TopNav
         projectName={projectName}
         onProjectNameChange={handleProjectNameChange}
@@ -1185,18 +1186,25 @@ simulationRef.current.blockIndex++;
         objectName={selectedObject?.name}
       />
 
-      <div style={{ display: 'flex', flex: 1, position: 'relative', overflow: 'hidden' }}>
-        <aside style={{ width: simulationMode && !simulationCompleted ? 0 : (leftOpen ? '280px' : '0px'), height: '100%', backgroundColor: '#ffffff', borderRight: leftOpen && !(simulationMode && !simulationCompleted) ? '1px solid #e2e8f0' : 'none', boxShadow: leftOpen && !(simulationMode && !simulationCompleted) ? '4px 0 16px rgba(0,0,0,0.02)' : 'none', zIndex: 10, transition: 'all 0.3s', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div className="workspace-layout">
+        <aside 
+          className="left-sidebar"
+          style={{ width: simulationMode && !simulationCompleted ? 0 : (leftOpen ? '280px' : '0px') }}
+        >
           {!(simulationMode && !simulationCompleted) && <div style={{ width: '280px', padding: '24px', boxSizing: 'border-box', height: '100%', overflow: 'hidden' }}>
             <LeftPanel robot={selectedRobot} onActionClick={handleAddAction} targets={targets} selectedTargetId={selectedTargetId} onTargetSelect={handleTargetSelectFromCanvas} onAddTarget={handleAddTarget} onDeleteTarget={handleDeleteTarget} highlightAddTarget={highlightAddTarget} onDismissHighlight={handleDismissHighlight} />
           </div>}
         </aside>
 
-        <button onClick={() => setLeftOpen(!leftOpen)} style={{ position: 'absolute', left: leftOpen ? '266px' : '16px', top: '24px', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 20, color: '#4a5568' }}>
+        <button 
+          onClick={() => setLeftOpen(!leftOpen)} 
+          className="sidebar-toggle-btn left-toggle"
+          style={{ left: leftOpen ? '266px' : '16px' }}
+        >
           {leftOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
         </button>
 
-        <main style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 0, margin: '16px', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#f0f2f5', backgroundImage: 'linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
+        <main className="canvas-area">
           {selectedRobot ? (
             <div style={{ width: '100%', height: '100%', position: 'relative' }}>
 <WorkspaceCanvas robotModelUrl={selectedRobot.model} simulationMode={simulationMode} simulationPaused={simulationPaused} simState={simState} targets={targets} placedObjects={objectState.objects}>
@@ -1250,11 +1258,18 @@ simulationRef.current.blockIndex++;
           )}
         </main>
 
-        <button onClick={() => setRightOpen(!rightOpen)} style={{ position: 'absolute', right: rightOpen ? '326px' : '16px', top: '24px', width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 20, color: '#4a5568' }}>
+        <button 
+          onClick={() => setRightOpen(!rightOpen)} 
+          className="sidebar-toggle-btn right-toggle"
+          style={{ right: rightOpen ? '326px' : '16px' }}
+        >
           {rightOpen ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
 
-        <aside style={{ width: rightOpen ? '360px' : '0px', height: '100%', backgroundColor: '#ffffff', borderLeft: rightOpen ? '1px solid #e2e8f0' : 'none', boxShadow: rightOpen ? '-4px 0 16px rgba(0,0,0,0.02)' : 'none', zIndex: 10, transition: 'all 0.3s', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <aside 
+          className="right-sidebar"
+          style={{ width: rightOpen ? '360px' : '0px' }}
+        >
           <div style={{ width: '360px', height: '100%', position: 'relative', overflow: 'hidden' }}>
             <div style={{ width: '100%', height: '100%', padding: '24px', boxSizing: 'border-box', overflowY: 'auto' }}>
               <SequencePanel blocks={sequenceBlocks} activeBlockId={activeBlockId} onBlockSelect={handleBlockSelect} onBlockDelete={handleBlockDelete} onBlockReorder={setSequenceBlocks} targets={targets} />

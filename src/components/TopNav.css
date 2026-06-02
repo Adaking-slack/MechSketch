@@ -1,0 +1,248 @@
+.top-nav {
+  width: 100%;
+  height: 56px;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #E2E8F0;
+  font-family: var(--sys-typography-font-family-font-sans-serif), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  z-index: 100;
+  position: relative;
+}
+
+.top-nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 24px;
+}
+
+.top-nav-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.top-nav-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.top-nav-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+  gap: 16px;
+}
+
+.top-nav-project-name {
+  font-size: 18px;
+  line-height: 25px;
+  font-weight: 600;
+  color: #374049;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.top-nav-project-name:hover {
+  opacity: 0.7;
+}
+
+.top-nav-input {
+  font-size: 18px;
+  line-height: 25px;
+  color: #374049;
+  font-weight: 500;
+  border: 1px solid #E2E8F0;
+  border-radius: 4px;
+  padding: 2px 8px;
+  background: #F8FAFC;
+  outline: none;
+  width: 200px;
+}
+
+.top-nav-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.top-nav-button:hover {
+  opacity: 0.9;
+}
+
+.top-nav-simulate-btn {
+  background-color: #00376E;
+  color: #ECF5FE;
+  font-weight: 500;
+}
+
+.top-nav-stop-btn {
+  background-color: #DC2626;
+  color: #FFFFFF;
+}
+
+.top-nav-save-btn {
+  background-color: #10B981;
+  color: #FFFFFF;
+}
+
+.top-nav-start-new-btn {
+  background-color: #EF4444;
+  color: #FFFFFF;
+}
+
+.top-nav-robot-object-btn {
+  background-color: transparent;
+  color: #001529;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  padding: 6px 0;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.top-nav-robot-object-btn:hover {
+  opacity: 0.8;
+}
+
+.top-nav-separator {
+  color: #00857A;
+  font-weight: 600;
+}
+
+.top-nav-user-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+  transition: opacity 0.15s;
+}
+
+.top-nav-user-section:hover {
+  opacity: 0.8;
+}
+
+.top-nav-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #000000;
+  color: #FFFFFF;
+  font-size: 18px;
+  line-height: 18px;
+  font-weight: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.top-nav-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e2e8f0;
+  min-width: 160px;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.top-nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374049;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s;
+}
+
+.top-nav-dropdown-item:hover {
+  background-color: #f8fafc;
+}
+
+/* Tablet & Mobile Responsiveness */
+@media (max-width: 1024px) {
+  .top-nav-container {
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-nav-robot-object-btn {
+    display: none; /* Hide on mobile to save space */
+  }
+  
+  .top-nav-project-name {
+    font-size: 16px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .top-nav-right {
+    gap: 8px;
+  }
+
+  .top-nav-center {
+    flex: 2; /* Give more space to controls */
+  }
+}
+
+@media (max-width: 480px) {
+  .top-nav-project-name {
+    display: none; /* Hide project name on very small screens */
+  }
+  
+  .top-nav-button span {
+    display: none; /* Hide button text, show only icons */
+  }
+  
+  .top-nav-button {
+    padding: 12px; /* Increased for better touch target */
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+  }
+  
+  .top-nav-button svg {
+    margin: 0 !important;
+    width: 20px;
+    height: 20px;
+  }
+  
+  .top-nav-container {
+    padding: 0 8px;
+  }
+}

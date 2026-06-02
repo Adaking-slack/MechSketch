@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Square, Play, Pause, RotateCcw, LogOut, Save, Home, Download, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import './TopNav.css';
 
 interface TopNavProps {
   projectName?: string;
@@ -134,10 +135,10 @@ export default function TopNav({
   };
 
   return (
-    <nav style={styles.nav}>
-      <div style={styles.container}>
+    <nav className="top-nav">
+      <div className="top-nav-container">
         {/* Left: Project Name and File Menu */}
-        <div style={styles.leftSection}>
+        <div className="top-nav-left">
           <div style={{ display: 'flex', alignItems: 'center', gap: '1px' }}>
             {editing ? (
               <input
@@ -152,25 +153,14 @@ export default function TopNav({
                     setEditing(false);
                   }
                 }}
-                style={{ ...styles.input, textAlign: 'left', width: '200px' }}
+                className="top-nav-input"
+                style={{ textAlign: 'left' }}
               />
             ) : (
               <button
                 onClick={() => setEditing(true)}
-                style={{
-                  fontSize: '18px',
-                  lineHeight: '25px',
-                  fontWeight: 600,
-                  color: '#374049',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  transition: 'opacity 0.15s'
-                }}
+                className="top-nav-project-name"
                 title="Click to edit project name"
-                onMouseOver={(e) => e.currentTarget.style.opacity = '0.7'}
-                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
               >
                 {projectName}
               </button>
@@ -184,14 +174,14 @@ export default function TopNav({
                 {showFileMenu ? <ChevronUp size={20} color="#374049" /> : <ChevronDown size={20} color="#374049" />}
               </button>
               {showFileMenu && (
-                <div style={{ ...styles.dropdownMenu, top: '100%', left: '0', marginTop: '4px' }}>
+                <div className="top-nav-dropdown" style={{ top: '100%', left: '0', marginTop: '4px' }}>
                   {onHome && (
                     <button
                       onClick={() => {
                         onHome();
                         setShowFileMenu(false);
                       }}
-                      style={styles.fileDropdownItem}
+                      className="top-nav-dropdown-item"
                     >
                       <Home size={14} />
                       Home
@@ -204,8 +194,8 @@ export default function TopNav({
                         setShowFileMenu(false);
                       }
                     }}
+                    className="top-nav-dropdown-item"
                     style={{
-                      ...styles.fileDropdownItem,
                       opacity: hasSequence ? 1 : 0.5,
                       cursor: hasSequence ? 'pointer' : 'not-allowed',
                     }}
@@ -221,7 +211,8 @@ export default function TopNav({
                         onDeleteProject();
                         setShowFileMenu(false);
                       }}
-                      style={{ ...styles.fileDropdownItem, color: '#dc2626' }}
+                      className="top-nav-dropdown-item"
+                      style={{ color: '#dc2626' }}
                     >
                       Delete Project
                     </button>
@@ -233,106 +224,97 @@ export default function TopNav({
         </div>
 
         {/* Center: Simulation Controls */}
-        <div style={styles.centerSection}>
+        <div className="top-nav-center">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {simulationMode && (
               <button
                 onClick={onStop}
-                style={styles.stopBtn}
-                onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                className="top-nav-button top-nav-stop-btn"
               >
-                <Square size={12} style={{ marginRight: '4px' }} />
-                Stop
+                <Square size={12} />
+                <span>Stop</span>
               </button>
             )}
 
             {(canSave || simulationMode) && onSave && (
               <button
                 onClick={onSave}
-                style={styles.saveBtn}
-                onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                className="top-nav-button top-nav-save-btn"
               >
-                <Save size={12} style={{ marginRight: '4px' }} />
-                Save
+                <Save size={12} />
+                <span>Save</span>
               </button>
             )}
 
             <button
               onClick={onSimulate}
+              className="top-nav-button top-nav-simulate-btn"
               style={{
-                ...styles.simulateBtn,
                 backgroundColor: simulationMode
                   ? (simulationPaused ? '#10B981' : '#F59E0B')
                   : '#00376E',
               }}
-              onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
             >
               {simulationMode ? (
                 simulationPaused ? (
                   <>
-                    <Play size={12} style={{ marginRight: '4px' }} />
-                    Resume
+                    <Play size={12} />
+                    <span>Resume</span>
                   </>
                 ) : (
                   <>
-                    <Pause size={12} style={{ marginRight: '4px' }} />
-                    Pause
+                    <Pause size={12} />
+                    <span>Pause</span>
                   </>
                 )
               ) : (
-                'Simulate'
+                <>
+                  <Play size={12} className="desktop-only" style={{ display: 'none' }} />
+                  <span>Simulate</span>
+                </>
               )}
             </button>
 
             {!simulationMode && simulationCompleted && (
               <button
                 onClick={onStartNew}
-                style={styles.startNewBtn}
-                onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
-                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                className="top-nav-button top-nav-start-new-btn"
               >
-                <RotateCcw size={12} style={{ marginRight: '4px' }} />
-                Start New
+                <RotateCcw size={12} />
+                <span>Start New</span>
               </button>
             )}
           </div>
         </div>
 
         {/* Right: Actions & Profile */}
-        <div style={styles.rightSection}>
+        <div className="top-nav-right">
           <button
             onClick={handleRobotObjectClick}
-            style={styles.robotObjectBtn}
-            onMouseOver={(e) => e.currentTarget.style.opacity = '0.8'}
-            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+            className="top-nav-robot-object-btn"
           >
             <span>{robotName || 'No robot'}</span>
-            <span style={styles.separator}>/</span>
+            <span className="top-nav-separator">/</span>
             <span>{objectName || 'No object'}</span>
           </button>
 
           <div style={{ position: 'relative' }} ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              style={styles.userSection}
-              onMouseOver={(e) => e.currentTarget.style.opacity = '0.8'}
-              onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+              className="top-nav-user-section"
             >
-              <div style={styles.avatar}>{currentUserInitial}</div>
+              <div className="top-nav-avatar">{currentUserInitial}</div>
               {showUserMenu ? <ChevronUp size={24} color="#000000" /> : <ChevronDown size={24} color="#000000" />}
             </button>
 
             {showUserMenu && (
-              <div style={styles.userDropdown}>
+              <div className="top-nav-dropdown">
                 <button
                   onClick={() => {
                     setShowUserMenu(false);
                     onSettings?.();
                   }}
-                  style={styles.dropdownItem}
+                  className="top-nav-dropdown-item"
                 >
                   <Settings size={16} />
                   <span>Settings</span>
@@ -342,7 +324,7 @@ export default function TopNav({
                     setShowUserMenu(false);
                     onLogout?.();
                   }}
-                  style={styles.dropdownItem}
+                  className="top-nav-dropdown-item"
                 >
                   <LogOut size={16} />
                   <span>Log out</span>
@@ -355,198 +337,3 @@ export default function TopNav({
     </nav>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  nav: {
-    width: '100%',
-    height: '56px',
-    backgroundColor: '#FFFFFF',
-    borderBottom: '1px solid #E2E8F0',
-    fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-  },
-  container: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: '100%',
-    padding: '0 24px',
-  },
-  leftSection: {
-    display: 'flex',
-    alignItems: 'center',
-    flex: 1,
-  },
-  dropdownMenu: {
-    position: 'absolute',
-    backgroundColor: '#ffffff',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    border: '1px solid #e2e8f0',
-    minWidth: '160px',
-    zIndex: 100,
-    overflow: 'hidden',
-  },
-  fileDropdownItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    width: '100%',
-    padding: '10px 14px',
-    border: 'none',
-    backgroundColor: 'transparent',
-    color: '#374049',
-    fontSize: '14px',
-    textAlign: 'left',
-    cursor: 'pointer',
-    transition: 'background-color 0.15s',
-  },
-  centerSection: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  input: {
-    fontSize: '18px',
-    lineHeight: '25px',
-    color: '#374049',
-    fontWeight: 500,
-    border: '1px solid #E2E8F0',
-    borderRadius: '4px',
-    padding: '2px 8px',
-    background: '#F8FAFC',
-    outline: 'none',
-  },
-  rightSection: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    flex: 1,
-    gap: '16px',
-  },
-  robotObjectBtn: {
-    backgroundColor: 'transparent',
-    color: '#001529',
-    fontSize: '13px',
-    lineHeight: '18px',
-    fontWeight: 600,
-    border: 'none',
-    cursor: 'pointer',
-    padding: '6px 0',
-    transition: 'opacity 0.15s',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
-  },
-  separator: {
-    color: '#00857A',
-    fontWeight: 600,
-  },
-  simulateBtn: {
-    color: '#ECF5FE',
-    fontSize: '13px',
-    lineHeight: '18px',
-    fontWeight: 500,
-    border: 'none',
-    borderRadius: '6px',
-    padding: '6px 12px',
-    cursor: 'pointer',
-    transition: 'opacity 0.15s',
-    display: 'flex',
-    alignItems: 'center',
-  },
-  stopBtn: {
-    backgroundColor: '#DC2626',
-    color: '#FFFFFF',
-    fontSize: '13px',
-    lineHeight: '18px',
-    fontWeight: 600,
-    border: 'none',
-    borderRadius: '6px',
-    padding: '6px 12px',
-    cursor: 'pointer',
-    transition: 'opacity 0.15s',
-    display: 'flex',
-    alignItems: 'center',
-  },
-  saveBtn: {
-    backgroundColor: '#10B981',
-    color: '#FFFFFF',
-    fontSize: '13px',
-    lineHeight: '18px',
-    fontWeight: 600,
-    border: 'none',
-    borderRadius: '6px',
-    padding: '6px 12px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    transition: 'opacity 0.15s',
-  },
-  startNewBtn: {
-    backgroundColor: '#EF4444',
-    color: '#FFFFFF',
-    fontSize: '13px',
-    lineHeight: '18px',
-    fontWeight: 600,
-    border: 'none',
-    borderRadius: '6px',
-    padding: '6px 12px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    transition: 'opacity 0.15s',
-  },
-  userSection: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    cursor: 'pointer',
-    backgroundColor: 'transparent',
-    border: 'none',
-    padding: '0',
-    transition: 'opacity 0.15s',
-  },
-  avatar: {
-    width: '36px',
-    height: '36px',
-    borderRadius: '50%',
-    backgroundColor: '#000000',
-    color: '#FFFFFF',
-    fontSize: '18px',
-    lineHeight: '18px',
-    fontWeight: 300,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  userDropdown: {
-    position: 'absolute',
-    top: '100%',
-    right: 0,
-    marginTop: '12px',
-    backgroundColor: '#ffffff',
-    borderRadius: '8px',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    border: '1px solid #e2e8f0',
-    minWidth: '160px',
-    overflow: 'hidden',
-    zIndex: 100,
-  },
-  dropdownItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    width: '100%',
-    padding: '12px 16px',
-    backgroundColor: 'transparent',
-    border: 'none',
-    borderRadius: 0,
-    fontSize: '14px',
-    fontWeight: 500,
-    color: '#374049',
-    cursor: 'pointer',
-    textAlign: 'left',
-    transition: 'background-color 0.15s',
-  },
-};

@@ -1,0 +1,108 @@
+.home-container {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #F6F7F9;
+  font-family: var(--sys-typography-font-family-font-sans-serif), "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+.workspace-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.left-sidebar {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: #FFFFFF;
+  border-right: 1px solid #E2E8F0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+
+.right-sidebar {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: #FFFFFF;
+  border-left: 1px solid #E2E8F0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+
+.canvas-area {
+  flex: 1;
+  position: relative;
+  background-color: #F6F7F9;
+  overflow: hidden;
+}
+
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 48px;
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374049;
+  z-index: 30;
+  transition: all 0.2s ease;
+}
+
+.left-toggle {
+  left: 0;
+  border-radius: 0 8px 8px 0;
+  border-left: none;
+}
+
+.right-toggle {
+  right: 0;
+  border-radius: 8px 0 0 8px;
+  border-right: none;
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: #F8FAFC;
+  color: #00376E;
+}
+
+/* Tablet & Mobile Layout */
+@media (max-width: 1024px) {
+  .left-sidebar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    box-shadow: 4px 0 12px rgba(0,0,0,0.1);
+  }
+  
+  .right-sidebar {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    box-shadow: -4px 0 12px rgba(0,0,0,0.1);
+  }
+}
+
+@media (max-width: 768px) {
+  .left-sidebar, .right-sidebar {
+    width: 280px !important; /* Force width when open */
+  }
+}
+
+@media (max-width: 480px) {
+  .left-sidebar, .right-sidebar {
+    width: 100% !important; /* Full width on small mobile */
+  }
+}
