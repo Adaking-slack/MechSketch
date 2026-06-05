@@ -199,7 +199,6 @@
 }
 
 .problem-text {
-  flex: 1 1 400px;
   font-size: 18px;
   line-height: 28px;
   letter-spacing: -0.01em;
@@ -209,6 +208,10 @@
   text-align: left;
   overflow-wrap: break-word;
   word-wrap: break-word;
+}
+
+.problem-content .problem-text {
+  flex: 1 1 400px;
 }
 
 .solution-content {
@@ -309,6 +312,7 @@
   .hero-left, .hero-right {
     flex: 1 1 100%;
     min-height: auto;
+    padding: 60px 24px;
   }
 
   .section-container {
@@ -360,4 +364,336 @@
   .hero-title {
     font-size: 24px;
   }
+}
+
+/* Header and Navigation overlay */
+.landing-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  height: 88px;
+  box-sizing: border-box;
+  z-index: 100;
+}
+
+.header-left {
+  flex: 1 1 500px;
+  min-width: 300px;
+  padding: 32px 24px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.header-logo-img {
+  height: 20px;
+  object-fit: contain;
+}
+
+.header-right {
+  flex: 1 1 500px;
+  min-width: 300px;
+  padding: 32px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.desktop-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.mobile-menu-toggle {
+  display: none;
+}
+
+/* Steps section styling */
+.steps-right-side {
+  flex: 1 1 500px;
+  display: flex;
+  flex-direction: column;
+  background-color: #FFFFFF;
+}
+
+.step-item {
+  display: flex;
+  gap: 24px;
+  padding: 24px 32px;
+  border-bottom: 1px solid #EAEAEA;
+}
+
+.step-item:last-child {
+  border-bottom: none;
+}
+
+.step-num {
+  font-size: 32px;
+  line-height: 45px;
+  font-weight: 400;
+  color: #000000;
+  min-width: 24px;
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  padding-top: 6px;
+}
+
+/* Use cases section styling */
+.use-case-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 384px;
+  margin: 0 auto;
+  cursor: pointer;
+}
+
+.use-case-img {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  background-color: #EAEAEA;
+}
+
+/* CTA section styling */
+.cta-section {
+  padding: 180px 24px;
+  background-color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Utilities */
+.desktop-only {
+  display: inline;
+}
+
+.hero-text-container {
+  margin-top: 140px;
+  margin-bottom: auto;
+  max-width: 100%;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .landing-header {
+    height: 70px;
+    padding: 0 24px;
+    justify-content: space-between;
+    align-items: center;
+    background-color: transparent;
+  }
+
+  .header-left {
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .header-right {
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: 0;
+    justify-content: flex-end;
+  }
+
+  .desktop-nav {
+    display: none;
+  }
+
+  .mobile-menu-toggle {
+    display: flex;
+    background: none;
+    border: none;
+    color: #FFFFFF;
+    cursor: pointer;
+    padding: 8px;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+  }
+
+  .mobile-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #001529;
+    z-index: 99;
+    display: flex;
+    flex-direction: column;
+    padding: 100px 24px 40px 24px;
+    box-sizing: border-box;
+  }
+
+  .mobile-nav-links {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    margin-bottom: 48px;
+  }
+
+  .mobile-nav-link {
+    font-size: 22px;
+    color: #ECF5FE;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .mobile-nav-link:hover {
+    color: #A9D3FF;
+  }
+
+  .mobile-nav-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .mobile-login-btn {
+    background-color: rgba(236, 245, 254, 0.1);
+    color: #ECF5FE;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 14px;
+    border: 1px solid rgba(236, 245, 254, 0.3);
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: background-color 0.2s;
+  }
+
+  .mobile-login-btn:hover {
+    background-color: rgba(236, 245, 254, 0.2);
+  }
+
+  .mobile-start-btn {
+    background-color: #ECF5FE;
+    color: #001529;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: opacity 0.2s;
+  }
+
+  .mobile-start-btn:hover {
+    opacity: 0.9;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
+  .hero-text-container {
+    margin-top: 60px;
+  }
+
+  .step-item {
+    padding: 20px 16px;
+    gap: 16px;
+  }
+
+  .step-num {
+    font-size: 28px;
+    line-height: 36px;
+  }
+
+  .use-case-img {
+    height: auto;
+    aspect-ratio: 4 / 3;
+  }
+
+  .cta-section {
+    padding: 80px 24px;
+  }
+
+  .section-title {
+    font-size: 24px;
+    margin-bottom: 28px !important;
+  }
+
+  .section-title-with-subtitle {
+    margin-bottom: 16px !important;
+  }
+
+  .section-subtitle {
+    font-size: 16px;
+    line-height: 24px;
+    margin-bottom: 28px !important;
+  }
+
+  .solution-desc {
+    margin-bottom: 28px !important;
+  }
+
+  .steps-container {
+    gap: 28px;
+  }
+
+  .steps-left-side {
+    padding-top: 0 !important;
+  }
+
+  .problem-section {
+    margin-top: 0 !important;
+  }
+
+  .feature-card {
+    padding: 24px !important;
+  }
+
+  .use-case-grid {
+    grid-template-columns: 1fr;
+    gap: 28px !important;
+  }
+}
+
+/* Global subheading and description styles */
+.section-subtitle {
+  font-size: 18px;
+  line-height: 28px;
+  letter-spacing: -0.01em;
+  font-weight: 400;
+  color: #374049;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto 48px auto;
+}
+
+.solution-desc {
+  font-size: 18px;
+  line-height: 28px;
+  letter-spacing: -0.01em;
+  font-weight: 400;
+  color: #374049;
+  margin: 0 0 32px 0;
+  text-align: left;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.steps-left-side {
+  flex: 1 1 400px;
+  padding-top: 24px;
+}
+
+.problem-section {
+  margin-top: 100px;
 }

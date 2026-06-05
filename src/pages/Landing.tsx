@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Waypoints, Box, Settings, Target, Network, Bot } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Waypoints, Box, Settings, Target, Network, Bot, Menu, X } from 'lucide-react';
 import './Landing.css';
 
 const LayeredIsometricIcon = ({ icon: Icon, color }: { icon: any, color: string }) => {
@@ -136,6 +137,7 @@ const SimulationLines = () => {
 
 export default function Landing() {
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const sectionAnimation = {
     initial: { opacity: 0, y: 40 },
@@ -147,18 +149,97 @@ export default function Landing() {
   return (
     <div className="landing-container">
 
+      {/* HEADER SECTION */}
+      <header className="landing-header">
+        <div className="header-left">
+          <img src="/logo.svg" alt="MechSketch Logo" className="header-logo-img" />
+        </div>
+        <div className="header-right">
+          {/* Desktop Navigation */}
+          <nav className="desktop-nav">
+            <div className="nav-links">
+              <a href="#" className="nav-link active">Home</a>
+              <a href="#features" className="nav-link">Features</a>
+              <a href="#how-it-works" className="nav-link">How it works</a>
+            </div>
+
+            <div className="nav-btns">
+              <button
+                onClick={() => navigate('/auth?view=login')}
+                className="login-btn"
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+              >
+                Login
+              </button>
+              <button
+                onClick={() => navigate('/auth?view=signup')}
+                className="start-btn-small"
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+              >
+                Get started
+              </button>
+            </div>
+          </nav>
+
+          {/* Mobile Hamburg Toggle */}
+          <button
+            className="mobile-menu-toggle"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle Navigation Menu"
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+
+        {/* Mobile Navigation Drawer */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="mobile-drawer"
+            >
+              <div className="mobile-nav-links">
+                <a href="#" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>Home</a>
+                <a href="#features" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>Features</a>
+                <a href="#how-it-works" className="mobile-nav-link" onClick={() => setIsMobileMenuOpen(false)}>How it works</a>
+              </div>
+              <div className="mobile-nav-btns">
+                <button
+                  onClick={() => {
+                    navigate('/auth?view=login');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="mobile-login-btn"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/auth?view=signup');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="mobile-start-btn"
+                >
+                  Get started
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </header>
+
       {/* HERO SECTION */}
       <motion.div {...sectionAnimation} className="hero-section">
 
         {/* LEFT SECTION (Dark Blue) */}
         <div className="hero-left">
-          {/* Logo */}
-          <div className="hero-logo">
-            <img src="/logo.svg" alt="MechSketch Logo" style={{ height: '20px', objectFit: 'contain' }} />
-          </div>
-
           {/* Hero Text */}
-          <div style={{ marginTop: '40px', marginBottom: 'auto', maxWidth: '100%' }}>
+          <div className="hero-text-container">
             <h1 className="hero-title">
               Design Robot Workflows, Visually
             </h1>
@@ -178,38 +259,6 @@ export default function Landing() {
 
         {/* RIGHT SECTION (White) */}
         <div className="hero-right">
-
-          {/* Top Navigation */}
-          <div className="landing-nav">
-
-            {/* Navigation Links */}
-            <div className="nav-links">
-              <a href="#" className="nav-link active">Home</a>
-              <a href="#features" className="nav-link">Features</a>
-              <a href="#how-it-works" className="nav-link">How it works</a>
-            </div>
-
-            {/* Buttons */}
-            <div className="nav-btns">
-              <button
-                onClick={() => navigate('/auth?view=login')}
-                className="login-btn"
-                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-              >
-                Login
-              </button>
-              <button
-                onClick={() => navigate('/auth?view=signup')}
-                className="start-btn-small"
-                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-              >
-                Get started
-              </button>
-            </div>
-          </div>
-
           {/* Hero Image */}
           <div className="hero-image-container">
             <img
@@ -218,14 +267,13 @@ export default function Landing() {
               className="hero-image"
             />
           </div>
-
         </div>
       </motion.div>
 
       {/* PROBLEM SECTION */}
-      <motion.div {...sectionAnimation} className="section-container" style={{ marginTop: '100px', backgroundColor: '#F7F9F9' }}>
+      <motion.div {...sectionAnimation} className="section-container problem-section" style={{ backgroundColor: '#F7F9F9' }}>
         <h2 className="section-title">
-          Robotic Workflow <br /> Design Is Too Complex
+          Robotic Workflow <br className="desktop-only" /> Design Is Too Complex
         </h2>
 
         <div className="problem-content">
@@ -254,10 +302,10 @@ export default function Landing() {
 
           {/* Text Right */}
           <div style={{ flex: '1 1 400px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
-            <h2 className="section-title" style={{ textAlign: 'left', marginBottom: '16px' }}>
-              A Visual Way to Build, Test, and <br /> Understand Robot Behavior
+            <h2 className="section-title section-title-with-subtitle" style={{ textAlign: 'left' }}>
+              A Visual Way to Build, Test, and <br className="desktop-only" /> Understand Robot Behavior
             </h2>
-            <p className="problem-text" style={{ marginBottom: '32px' }}>
+            <p className="solution-desc">
               Our platform simplifies robotic workflow design into an intuitive visual experience. You can place objects, define targets, and simulate real robot actions—all in one place.
             </p>
             <button
@@ -276,12 +324,12 @@ export default function Landing() {
       {/* FEATURE GRID SECTION (Section 4) */}
       <motion.div {...sectionAnimation} className="section-container" style={{ backgroundColor: '#F7F9F9' }}>
         {/* Heading */}
-        <h2 id="features" className="section-title" style={{ maxWidth: '800px', marginBottom: '16px' }}>
+        <h2 id="features" className="section-title section-title-with-subtitle" style={{ maxWidth: '800px' }}>
           Design Smarter Robot Behavior From Start to Finish
         </h2>
 
         {/* Subheading */}
-        <p className="problem-text" style={{ textAlign: 'center', maxWidth: '800px', marginBottom: '48px' }}>
+        <p className="section-subtitle">
           From visual task creation to real-time simulation, every feature is built to help you define precise robot behavior without complexity.
         </p>
 
@@ -361,8 +409,8 @@ export default function Landing() {
       <motion.div {...sectionAnimation} className="section-container" style={{ backgroundColor: '#FFFFFF' }}>
         <div className="steps-container">
           {/* Left Side */}
-          <div style={{ flex: '1 1 400px', paddingTop: '24px' }}>
-            <h2 id="how-it-works" className="section-title" style={{ textAlign: 'left', marginBottom: '16px' }}>
+          <div className="steps-left-side">
+            <h2 id="how-it-works" className="section-title section-title-with-subtitle" style={{ textAlign: 'left' }}>
               From Setup to Simulation in 5 Simple Steps
             </h2>
             <p className="problem-text" style={{ fontSize: '18px' }}>
@@ -371,24 +419,19 @@ export default function Landing() {
           </div>
 
           {/* Right Side (Steps) */}
-          <div style={{ flex: '1 1 500px', display: 'flex', flexDirection: 'column', backgroundColor: '#FFFFFF' }}>
+          <div className="steps-right-side">
             {[
               { num: '1', title: 'Set Up Your Scene', desc: 'Add your robot, place objects, and define target areas.' },
               { num: '2', title: 'Define Actions', desc: 'Create workflows using action cards to control behavior.' },
               { num: '3', title: 'Run Simulation', desc: 'Watch your robot execute tasks in real time.' },
               { num: '4', title: 'Optimize', desc: 'Refine movements and fix errors before real-world deployment.' },
               { num: '5', title: 'Export', desc: 'Finalize and export your workflow for real-world use.' }
-            ].map((step, index, arr) => (
-              <div key={index} style={{
-                display: 'flex',
-                gap: '24px',
-                padding: '24px 32px',
-                borderBottom: index === arr.length - 1 ? 'none' : '1px solid #EAEAEA'
-              }}>
-                <div style={{ fontSize: '32px', lineHeight: '45px', fontWeight: 400, color: '#000000', minWidth: '24px' }}>
+            ].map((step, index) => (
+              <div key={index} className="step-item">
+                <div className="step-num">
                   {step.num}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', paddingTop: '6px' }}>
+                <div className="step-content">
                   <h3 className="section-title" style={{ fontSize: '22px', textAlign: 'left', marginBottom: '8px' }}>
                     {step.title}
                   </h3>
@@ -405,12 +448,12 @@ export default function Landing() {
       {/* USE CASES SECTION (Section 6) */}
       <motion.div {...sectionAnimation} className="section-container" style={{ backgroundColor: '#F7F9F9' }}>
         {/* Heading */}
-        <h2 className="section-title" style={{ maxWidth: '800px', marginBottom: '16px' }}>
+        <h2 className="section-title section-title-with-subtitle" style={{ maxWidth: '800px' }}>
           Built for Real-World Robotics Applications
         </h2>
 
         {/* Subheading */}
-        <p className="problem-text" style={{ textAlign: 'center', maxWidth: '800px', marginBottom: '64px' }}>
+        <p className="section-subtitle">
           Leverage powerful AI systems designed for complex, real-world use cases across industrial and service robotics.
         </p>
 
@@ -427,14 +470,14 @@ export default function Landing() {
             <motion.div
               key={idx}
               whileHover={{ y: -4 }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', maxWidth: '384px', margin: '0 auto', cursor: 'pointer' }}
+              className="use-case-card"
             >
               <motion.img
                 src={`/landing-page/${card.img}`}
                 alt={card.caption}
                 whileHover={{ scale: 1.03 }}
                 transition={{ duration: 0.3 }}
-                style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '12px', marginBottom: '16px', backgroundColor: '#EAEAEA' }}
+                className="use-case-img"
               />
               <p className="problem-text" style={{ fontWeight: 500 }}>
                 {card.caption}
@@ -445,7 +488,7 @@ export default function Landing() {
       </motion.div>
 
       {/* FINAL CTA SECTION (Section 7) */}
-      <motion.div {...sectionAnimation} className="section-container" style={{ padding: '240px 24px', backgroundColor: '#ffffff', position: 'relative', overflow: 'hidden' }}>
+      <motion.div {...sectionAnimation} className="section-container cta-section">
         <SimulationLines />
         <h2 className="section-title" style={{ position: 'relative', zIndex: 1, marginBottom: '16px' }}>
           Start Building Smarter Robot Workflows
