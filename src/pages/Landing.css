@@ -178,6 +178,10 @@
   word-wrap: break-word;
 }
 
+.section-title-with-subtitle {
+  margin-bottom: 24px;
+}
+
 .problem-content {
   display: flex;
   flex-direction: row;

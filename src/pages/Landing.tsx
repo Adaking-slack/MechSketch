@@ -397,11 +397,11 @@ export default function Landing() {
         <button
           onClick={() => navigate('/auth?view=signup')}
           className="hero-btn"
-          style={{ backgroundColor: '#00376E', marginTop: '48px' }}
+          style={{ backgroundColor: '#00376E', color: '#ECF5FE', marginTop: '48px' }}
           onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
           onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
         >
-          Get Started
+          Get started
         </button>
       </motion.div>
 
